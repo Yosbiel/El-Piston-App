@@ -1,41 +1,43 @@
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev.flutter.flutter-gradle-plugin")
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This file is auto generated.
+// To update all the settings.gradle files in the Flutter repo,
+// See dev/tools/bin/generate_gradle_lockfiles.dart.
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
 }
 
-android {
-    namespace = "com.yosbielalejandro.piston"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+rootProject.layout.buildDirectory.value(
+    rootProject.layout.buildDirectory
+        .dir("../../build")
+        .get()
+)
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
-
-    defaultConfig {
-        applicationId = "com.yosbielalejandro.piston"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
-    }
-
-    buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+subprojects {
+    project.layout.buildDirectory.value(
+        rootProject.layout.buildDirectory
+            .dir(project.name)
+            .get()
+    )
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+    dependencyLocking {
+        ignoredDependencies.add("io.flutter:*")
+        lockFile = file("${rootProject.projectDir}/project-${project.name}.lockfile")
+        var ignoreFile = file("${rootProject.projectDir}/.ignore-locking.md")
+        if (!ignoreFile.exists() && !project.hasProperty("local-engine-repo")) {
+            lockAllConfigurations()
         }
     }
 }
 
-flutter {
-    source = "../.."
+tasks.register<Delete>("clean") {
+    delete(rootProject.layout.buildDirectory)
 }

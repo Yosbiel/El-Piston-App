@@ -1,24 +1,20 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 plugins {
     id("com.android.application")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    namespace = "com.yosbielalejandro.diazcala.turco"
+    namespace = "com.yosbielalejandro.piston"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 
     defaultConfig {
-        applicationId = "com.yosbielalejandro.diazcala.turco"
+        applicationId = "com.yosbielalejandro.piston"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -26,9 +22,7 @@ android {
     }
 
     buildTypes {
-        named("release") {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+        release {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
