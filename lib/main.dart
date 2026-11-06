@@ -24,10 +24,25 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.system;
 
-  void _cambiarTema() {
-    setState(() {
-      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _cargarTema();
+  }
+
+  void _cargarTema() async {
+    final tema = await widget.repo.obtenerTema();
+    if (tema != null && mounted) {
+      setState(() {
+        _themeMode = tema == 'dark' ? ThemeMode.dark : ThemeMode.light;
+      });
+    }
+  }
+
+  void _cambiarTema() async {
+    final nuevoModo = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    setState(() => _themeMode = nuevoModo);
+    await widget.repo.guardarTema(nuevoModo == ThemeMode.dark ? 'dark' : 'light');
   }
 
   @override
@@ -38,19 +53,13 @@ class _MyAppState extends State<MyApp> {
       themeMode: _themeMode,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFE65100), // Naranja industrial
-          brightness: Brightness.light,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE65100), brightness: Brightness.light),
         fontFamily: 'Poppins',
         appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFE65100),
-          brightness: Brightness.dark,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE65100), brightness: Brightness.dark),
         fontFamily: 'Poppins',
         appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
       ),
@@ -70,7 +79,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _index = 0;
-
   final _titulos = ['Órdenes de Servicio', 'Clientes', 'Inventario de Repuestos'];
 
   @override
@@ -86,18 +94,13 @@ class _MainScreenState extends State<MainScreen> {
         title: Text(_titulos[_index]),
         actions: [
           IconButton(
-            icon: Icon(Theme.of(context).brightness == Brightness.dark 
-                ? Icons.light_mode 
-                : Icons.dark_mode),
+            icon: Icon(Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode),
             onPressed: widget.onCambiarTema,
             tooltip: 'Cambiar tema',
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _index,
-        children: screens,
-      ),
+      body: IndexedStack(index: _index, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),

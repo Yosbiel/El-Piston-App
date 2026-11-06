@@ -42,6 +42,29 @@ class _ClientesScreenState extends State<ClientesScreen> {
     );
   }
 
+  void _eliminar(Cliente c) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Eliminar cliente?'),
+        content: Text('Se eliminará a ${c.nombre} permanentemente.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              await widget.repo.eliminarCliente(c.id!);
+              if (ctx.mounted) Navigator.pop(ctx);
+              _cargar();
+              _mostrarToast('Cliente eliminado');
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _mostrarFormulario() {
     final nombreCtrl = TextEditingController();
     final telefonoCtrl = TextEditingController();
@@ -71,6 +94,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'El teléfono es obligatorio';
                     if (v.length < 8) return 'Mínimo 8 dígitos';
+                    if (int.tryParse(v) == null) return 'Debe ser numérico';
                     return null;
                   },
                 ),
@@ -88,9 +112,14 @@ class _ClientesScreenState extends State<ClientesScreen> {
           ElevatedButton(
             onPressed: () async {
               if (formKey.currentState!.validate()) {
+                final telefono = telefonoCtrl.text.trim();
+                if (await widget.repo.existeTelefono(telefono)) {
+                  if (ctx.mounted) _mostrarToast('Ese teléfono ya está registrado', esError: true);
+                  return;
+                }
                 await widget.repo.insertarCliente(Cliente(
                   nombre: nombreCtrl.text.trim(),
-                  telefono: telefonoCtrl.text.trim(),
+                  telefono: telefono,
                   direccion: direccionCtrl.text.trim().isEmpty ? null : direccionCtrl.text.trim(),
                 ));
                 if (ctx.mounted) Navigator.pop(ctx);
@@ -126,6 +155,10 @@ class _ClientesScreenState extends State<ClientesScreen> {
                     title: Text(c.nombre, style: const TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: Text('${c.telefono}${c.direccion != null ? '\n${c.direccion}' : ''}'),
                     isThreeLine: c.direccion != null,
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: () => _eliminar(c),
+                    ),
                   ),
                 );
               },

@@ -10,6 +10,19 @@ class Repositorio {
   final AppDatabase db;
   Repositorio(this.db);
 
+  // --- CONFIGURACIÓN (TEMA) ---
+  Future<String?> obtenerTema() async {
+    final res = await db.customSelect("SELECT valor FROM configuracion WHERE clave = 'tema'").getSingleOrNull();
+    return res?.data['valor'] as String?;
+  }
+
+  Future<void> guardarTema(String tema) async {
+    await db.customInsert(
+      "INSERT OR REPLACE INTO configuracion (clave, valor) VALUES ('tema', ?)",
+      variables: [Variable(tema)],
+    );
+  }
+
   // --- CLIENTES ---
   Future<List<Cliente>> obtenerClientes() async {
     final res = await db.customSelect('SELECT * FROM clientes').get();
@@ -21,6 +34,15 @@ class Repositorio {
         variables: [Variable(c.nombre), Variable(c.telefono), Variable(c.direccion)]);
   }
 
+  Future<bool> existeTelefono(String telefono) async {
+    final res = await db.customSelect('SELECT COUNT(*) as count FROM clientes WHERE telefono = ?', variables: [Variable(telefono)]).getSingle();
+    return (res.data['count'] as int) > 0;
+  }
+
+  Future<void> eliminarCliente(int id) async {
+    await db.customUpdate('DELETE FROM clientes WHERE id = ?', variables: [Variable(id)]);
+  }
+
   // --- VEHICULOS ---
   Future<List<Vehiculo>> obtenerVehiculosPorCliente(int clienteId) async {
     final res = await db.customSelect('SELECT * FROM vehiculos WHERE cliente_id = ?', variables: [Variable(clienteId)]).get();
@@ -30,6 +52,11 @@ class Repositorio {
   Future<int> insertarVehiculo(Vehiculo v) async {
     return db.customInsert('INSERT INTO vehiculos (cliente_id, matricula, marca, modelo, anio, kilometraje) VALUES (?, ?, ?, ?, ?, ?)',
         variables: [Variable(v.clienteId), Variable(v.matricula), Variable(v.marca), Variable(v.modelo), Variable(v.anio), Variable(v.kilometraje)]);
+  }
+
+  Future<bool> existeMatricula(String matricula) async {
+    final res = await db.customSelect('SELECT COUNT(*) as count FROM vehiculos WHERE matricula = ?', variables: [Variable(matricula)]).getSingle();
+    return (res.data['count'] as int) > 0;
   }
 
   // --- ORDENES ---
@@ -48,15 +75,8 @@ class Repositorio {
         variables: [Variable(nuevoEstado), Variable(ordenId)]);
   }
 
-  // --- TRABAJOS ---
-  Future<List<Trabajo>> obtenerTrabajosPorOrden(int ordenId) async {
-    final res = await db.customSelect('SELECT * FROM trabajos WHERE orden_id = ?', variables: [Variable(ordenId)]).get();
-    return res.map((row) => Trabajo.fromMap(row.data)).toList();
-  }
-
-  Future<void> insertarTrabajo(Trabajo t) async {
-    await db.customInsert('INSERT INTO trabajos (orden_id, descripcion, precio) VALUES (?, ?, ?)',
-        variables: [Variable(t.ordenId), Variable(t.descripcion), Variable(t.precio)]);
+  Future<void> eliminarOrden(int id) async {
+    await db.customUpdate('DELETE FROM ordenes WHERE id = ?', variables: [Variable(id)]);
   }
 
   // --- REPUESTOS ---
@@ -68,6 +88,15 @@ class Repositorio {
   Future<void> insertarRepuesto(Repuesto r) async {
     await db.customInsert('INSERT INTO repuestos (nombre, codigo, precio, stock) VALUES (?, ?, ?, ?)',
         variables: [Variable(r.nombre), Variable(r.codigo), Variable(r.precio), Variable(r.stock)]);
+  }
+
+  Future<bool> existeCodigoRepuesto(String codigo) async {
+    final res = await db.customSelect('SELECT COUNT(*) as count FROM repuestos WHERE codigo = ?', variables: [Variable(codigo)]).getSingle();
+    return (res.data['count'] as int) > 0;
+  }
+
+  Future<void> eliminarRepuesto(int id) async {
+    await db.customUpdate('DELETE FROM repuestos WHERE id = ?', variables: [Variable(id)]);
   }
 
   Future<void> usarRepuesto(int ordenId, int repuestoId, int cantidad) async {

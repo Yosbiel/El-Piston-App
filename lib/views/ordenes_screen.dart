@@ -54,6 +54,29 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
     }
   }
 
+  void _eliminar(Orden o) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Eliminar orden?'),
+        content: Text('Se eliminará la orden #${o.id} permanentemente.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              await widget.repo.eliminarOrden(o.id!);
+              if (ctx.mounted) Navigator.pop(ctx);
+              _cargar();
+              _mostrarToast('Orden eliminada');
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _mostrarFormulario() {
     final vehiculoCtrl = TextEditingController();
     final problemaCtrl = TextEditingController();
@@ -77,6 +100,7 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Obligatorio';
                     if (int.tryParse(v) == null) return 'Debe ser un número';
+                    if (int.parse(v) <= 0) return 'Debe ser mayor a 0';
                     return null;
                   },
                 ),
@@ -150,9 +174,18 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
                     ),
                     title: Text('Orden #${o.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('Vehículo ID: ${o.vehiculoId}\n${o.problema}'),
-                    trailing: Chip(
-                      label: Text(o.estado, style: TextStyle(fontSize: 10, color: _colorEstado(o.estado))),
-                      backgroundColor: _colorEstado(o.estado).withOpacity(0.1),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Chip(
+                          label: Text(o.estado, style: TextStyle(fontSize: 10, color: _colorEstado(o.estado))),
+                          backgroundColor: _colorEstado(o.estado).withOpacity(0.1),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () => _eliminar(o),
+                        ),
+                      ],
                     ),
                     isThreeLine: true,
                   ),

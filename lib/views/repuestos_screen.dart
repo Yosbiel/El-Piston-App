@@ -42,6 +42,29 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
     );
   }
 
+  void _eliminar(Repuesto r) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Eliminar repuesto?'),
+        content: Text('Se eliminará ${r.nombre} permanentemente.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              await widget.repo.eliminarRepuesto(r.id!);
+              if (ctx.mounted) Navigator.pop(ctx);
+              _cargar();
+              _mostrarToast('Repuesto eliminado');
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _mostrarFormulario() {
     final nombreCtrl = TextEditingController();
     final codigoCtrl = TextEditingController();
@@ -78,6 +101,7 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Obligatorio';
                     if (double.tryParse(v) == null) return 'Debe ser un número';
+                    if (double.parse(v) < 0) return 'Debe ser positivo';
                     return null;
                   },
                 ),
@@ -89,6 +113,7 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Obligatorio';
                     if (int.tryParse(v) == null) return 'Debe ser un entero';
+                    if (int.parse(v) < 0) return 'Debe ser positivo';
                     return null;
                   },
                 ),
@@ -101,9 +126,14 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
           ElevatedButton(
             onPressed: () async {
               if (formKey.currentState!.validate()) {
+                final codigo = codigoCtrl.text.trim();
+                if (await widget.repo.existeCodigoRepuesto(codigo)) {
+                  if (ctx.mounted) _mostrarToast('Ese código ya existe', esError: true);
+                  return;
+                }
                 await widget.repo.insertarRepuesto(Repuesto(
                   nombre: nombreCtrl.text.trim(),
-                  codigo: codigoCtrl.text.trim(),
+                  codigo: codigo,
                   precio: double.parse(precioCtrl.text.trim()),
                   stock: int.parse(stockCtrl.text.trim()),
                 ));
@@ -134,25 +164,28 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
                   elevation: 2,
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: Icon(
-                      Icons.settings,
-                      color: stockBajo ? Colors.red : Colors.grey,
-                    ),
+                    leading: Icon(Icons.settings, color: stockBajo ? Colors.red : Colors.grey),
                     title: Text(r.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('Código: ${r.codigo} | Precio: \$${r.precio.toStringAsFixed(2)}'),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: stockBajo ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Stock: ${r.stock}',
-                        style: TextStyle(
-                          color: stockBajo ? Colors.red : Colors.green,
-                          fontWeight: FontWeight.bold,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: stockBajo ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Stock: ${r.stock}',
+                            style: TextStyle(color: stockBajo ? Colors.red : Colors.green, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () => _eliminar(r),
+                        ),
+                      ],
                     ),
                   ),
                 );
