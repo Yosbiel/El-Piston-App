@@ -45,42 +45,10 @@ class _MyAppState extends State<MyApp> {
     await widget.repo.guardarTema(nuevoModo == ThemeMode.dark ? 'dark' : 'light');
   }
 
-  void _mostrarInformacion() {
-    showAboutDialog(
-      context: context,
-      applicationName: 'El Pist贸n - Gesti贸n de Taller',
-      applicationVersion: '1.0.0',
-      applicationIcon: const Icon(Icons.build, size: 50, color: Colors.orange),
-      children: [
-        const SizedBox(height: 16),
-        const Text(
-          'Aplicaci贸n para la gesti贸n de clientes, veh铆culos, 贸rdenes de servicio y repuestos del taller El Pist贸n.',
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Desarrollado por:',
-          style: TextStyle(fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        const Text(
-          'Yosbiel Alejandro D铆az Cala',
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Asignatura: Programaci贸n para Dispositivos M贸viles',
-          style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'El Pist贸n',
+      title: 'El Pistón',
       debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
       theme: ThemeData(
@@ -98,7 +66,6 @@ class _MyAppState extends State<MyApp> {
       home: MainScreen(
         repo: widget.repo,
         onCambiarTema: _cambiarTema,
-        onMostrarInfo: _mostrarInformacion,
       ),
     );
   }
@@ -107,8 +74,7 @@ class _MyAppState extends State<MyApp> {
 class MainScreen extends StatefulWidget {
   final Repositorio repo;
   final VoidCallback onCambiarTema;
-  final VoidCallback onMostrarInfo;
-  const MainScreen({super.key, required this.repo, required this.onCambiarTema, required this.onMostrarInfo});
+  const MainScreen({super.key, required this.repo, required this.onCambiarTema});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -116,7 +82,39 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _index = 0;
-  final _titulos = ['脫rdenes de Servicio', 'Clientes', 'Inventario de Repuestos'];
+  final _titulos = ['Órdenes de Servicio', 'Clientes', 'Inventario de Repuestos'];
+
+  void _mostrarInformacion() {
+    showAboutDialog(
+      context: context, // <-- Ahora este context está dentro del MaterialApp
+      applicationName: 'El Pistón - Gestión de Taller',
+      applicationVersion: '1.0.0',
+      applicationIcon: const Icon(Icons.build, size: 50, color: Colors.orange),
+      children: [
+        const SizedBox(height: 16),
+        const Text(
+          'Aplicación para la gestión de clientes, vehículos, órdenes de servicio y repuestos del taller El Pistón.',
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Desarrollado por:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        const Text(
+          'Yosbiel Alejandro Díaz Cala',
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Asignatura: Programación para Dispositivos Móviles',
+          style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,8 +130,8 @@ class _MainScreenState extends State<MainScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
-            onPressed: widget.onMostrarInfo,
-            tooltip: 'Informaci贸n',
+            onPressed: _mostrarInformacion, // <-- Llamada directa
+            tooltip: 'Información',
           ),
           IconButton(
             icon: Icon(Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode),
@@ -155,27 +153,9 @@ class _MainScreenState extends State<MainScreen> {
         selectedIconTheme: const IconThemeData(size: 28),
         unselectedIconTheme: const IconThemeData(size: 24),
         items: [
-          _buildItem(
-            context,
-            icon: Icons.build_circle_outlined,
-            selectedIcon: Icons.build_circle,
-            label: '脫rdenes',
-            index: 0,
-          ),
-          _buildItem(
-            context,
-            icon: Icons.people_outline,
-            selectedIcon: Icons.people,
-            label: 'Clientes',
-            index: 1,
-          ),
-          _buildItem(
-            context,
-            icon: Icons.inventory_2_outlined,
-            selectedIcon: Icons.inventory_2,
-            label: 'Repuestos',
-            index: 2,
-          ),
+          _buildItem(context, icon: Icons.build_circle_outlined, selectedIcon: Icons.build_circle, label: 'Órdenes', index: 0),
+          _buildItem(context, icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Clientes', index: 1),
+          _buildItem(context, icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, label: 'Repuestos', index: 2),
         ],
       ),
     );
