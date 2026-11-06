@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+锘縤mport 'package:flutter/material.dart';
 import 'data/database.dart';
 import 'data/repositorio.dart';
 import 'views/clientes_screen.dart';
@@ -48,7 +48,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'El Pistón',
+      title: 'El Pist贸n',
       debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
       theme: ThemeData(
@@ -82,18 +82,18 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _index = 0;
-  final _titulos = ['Órdenes de Servicio', 'Clientes', 'Inventario de Repuestos'];
+  final _titulos = ['脫rdenes de Servicio', 'Clientes', 'Inventario de Repuestos'];
 
   void _mostrarInformacion() {
     showAboutDialog(
-      context: context, // <-- Ahora este context está dentro del MaterialApp
-      applicationName: 'El Pistón - Gestión de Taller',
+      context: context, // <-- Ahora este context est谩 dentro del MaterialApp
+      applicationName: 'El Pist贸n - Gesti贸n de Taller',
       applicationVersion: '1.0.0',
       applicationIcon: const Icon(Icons.build, size: 50, color: Colors.orange),
       children: [
         const SizedBox(height: 16),
         const Text(
-          'Aplicación para la gestión de clientes, vehículos, órdenes de servicio y repuestos del taller El Pistón.',
+          'Aplicaci贸n para la gesti贸n de clientes, veh铆culos, 贸rdenes de servicio y repuestos del taller El Pist贸n.',
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -103,12 +103,12 @@ class _MainScreenState extends State<MainScreen> {
           textAlign: TextAlign.center,
         ),
         const Text(
-          'Yosbiel Alejandro Díaz Cala',
+          'Yosbiel Alejandro D铆az Cala',
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         const Text(
-          'Asignatura: Programación para Dispositivos Móviles',
+          'Asignatura: Programaci贸n para Dispositivos M贸viles',
           style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
           textAlign: TextAlign.center,
         ),
@@ -131,7 +131,7 @@ class _MainScreenState extends State<MainScreen> {
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: _mostrarInformacion, // <-- Llamada directa
-            tooltip: 'Información',
+            tooltip: 'Informaci贸n',
           ),
           IconButton(
             icon: Icon(Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode),
@@ -153,7 +153,7 @@ class _MainScreenState extends State<MainScreen> {
         selectedIconTheme: const IconThemeData(size: 28),
         unselectedIconTheme: const IconThemeData(size: 24),
         items: [
-          _buildItem(context, icon: Icons.build_circle_outlined, selectedIcon: Icons.build_circle, label: 'Órdenes', index: 0),
+          _buildItem(context, icon: Icons.build_circle_outlined, selectedIcon: Icons.build_circle, label: '脫rdenes', index: 0),
           _buildItem(context, icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Clientes', index: 1),
           _buildItem(context, icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, label: 'Repuestos', index: 2),
         ],
