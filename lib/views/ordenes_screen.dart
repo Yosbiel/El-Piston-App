@@ -24,6 +24,24 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
     if (mounted) setState(() => _ordenes = data);
   }
 
+  void _mostrarToast(String mensaje, {bool esError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(esError ? Icons.error : Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(mensaje)),
+          ],
+        ),
+        backgroundColor: esError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   Color _colorEstado(String estado) {
     switch (estado) {
       case 'recibida': return Colors.blue;
@@ -36,10 +54,85 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
     }
   }
 
+  void _mostrarFormulario() {
+    final vehiculoCtrl = TextEditingController();
+    final problemaCtrl = TextEditingController();
+    String estadoSeleccionado = 'recibida';
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nueva Orden'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: vehiculoCtrl,
+                  decoration: const InputDecoration(labelText: 'ID del Vehículo *', border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Obligatorio';
+                    if (int.tryParse(v) == null) return 'Debe ser un número';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: problemaCtrl,
+                  decoration: const InputDecoration(labelText: 'Problema reportado *', border: OutlineInputBorder()),
+                  maxLines: 2,
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: estadoSeleccionado,
+                  decoration: const InputDecoration(labelText: 'Estado', border: OutlineInputBorder()),
+                  items: const [
+                    DropdownMenuItem(value: 'recibida', child: Text('Recibida')),
+                    DropdownMenuItem(value: 'en_diagnostico', child: Text('En diagnóstico')),
+                    DropdownMenuItem(value: 'en_reparacion', child: Text('En reparación')),
+                    DropdownMenuItem(value: 'lista', child: Text('Lista para entregar')),
+                    DropdownMenuItem(value: 'entregada', child: Text('Entregada')),
+                    DropdownMenuItem(value: 'cancelada', child: Text('Cancelada')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) estadoSeleccionado = val;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                await widget.repo.insertarOrden(Orden(
+                  vehiculoId: int.parse(vehiculoCtrl.text.trim()),
+                  fechaEntrada: DateTime.now().toIso8601String(),
+                  problema: problemaCtrl.text.trim(),
+                  estado: estadoSeleccionado,
+                ));
+                if (ctx.mounted) Navigator.pop(ctx);
+                _cargar();
+                _mostrarToast('Orden creada con éxito');
+              }
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Órdenes de Servicio')),
       body: _ordenes.isEmpty
           ? const Center(child: Text('No hay órdenes registradas'))
           : ListView.builder(
@@ -66,6 +159,10 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
                 );
               },
             ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _mostrarFormulario,
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }

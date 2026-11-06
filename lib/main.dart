@@ -13,35 +13,56 @@ void main() async {
   runApp(MyApp(repo: repo));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final Repositorio repo;
   const MyApp({super.key, required this.repo});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  void _cambiarTema() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'El Pistón',
       debugShowCheckedModeBanner: false,
+      themeMode: _themeMode,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFE65100), // Naranja industrial
           brightness: Brightness.light,
         ),
-        fontFamily: 'Poppins', // Si no tienes la fuente, quita esta línea
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
+        fontFamily: 'Poppins',
+        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
       ),
-      home: MainScreen(repo: repo),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFE65100),
+          brightness: Brightness.dark,
+        ),
+        fontFamily: 'Poppins',
+        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+      ),
+      home: MainScreen(repo: widget.repo, onCambiarTema: _cambiarTema),
     );
   }
 }
 
 class MainScreen extends StatefulWidget {
   final Repositorio repo;
-  const MainScreen({super.key, required this.repo});
+  final VoidCallback onCambiarTema;
+  const MainScreen({super.key, required this.repo, required this.onCambiarTema});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -49,6 +70,8 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _index = 0;
+
+  final _titulos = ['Órdenes de Servicio', 'Clientes', 'Inventario de Repuestos'];
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +82,18 @@ class _MainScreenState extends State<MainScreen> {
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(_titulos[_index]),
+        actions: [
+          IconButton(
+            icon: Icon(Theme.of(context).brightness == Brightness.dark 
+                ? Icons.light_mode 
+                : Icons.dark_mode),
+            onPressed: widget.onCambiarTema,
+            tooltip: 'Cambiar tema',
+          ),
+        ],
+      ),
       body: IndexedStack(
         index: _index,
         children: screens,

@@ -24,6 +24,24 @@ class _ClientesScreenState extends State<ClientesScreen> {
     if (mounted) setState(() => _clientes = data);
   }
 
+  void _mostrarToast(String mensaje, {bool esError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(esError ? Icons.error : Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(mensaje)),
+          ],
+        ),
+        backgroundColor: esError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _mostrarFormulario() {
     final nombreCtrl = TextEditingController();
     final telefonoCtrl = TextEditingController();
@@ -36,25 +54,33 @@ class _ClientesScreenState extends State<ClientesScreen> {
         title: const Text('Nuevo Cliente'),
         content: Form(
           key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nombreCtrl,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-                validator: (v) => v!.isEmpty ? 'Requerido' : null,
-              ),
-              TextFormField(
-                controller: telefonoCtrl,
-                decoration: const InputDecoration(labelText: 'Teléfono'),
-                keyboardType: TextInputType.phone,
-                validator: (v) => v!.isEmpty ? 'Requerido' : null,
-              ),
-              TextFormField(
-                controller: direccionCtrl,
-                decoration: const InputDecoration(labelText: 'Dirección (opcional)'),
-              ),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nombreCtrl,
+                  decoration: const InputDecoration(labelText: 'Nombre *', border: OutlineInputBorder()),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es obligatorio' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: telefonoCtrl,
+                  decoration: const InputDecoration(labelText: 'Teléfono *', border: OutlineInputBorder()),
+                  keyboardType: TextInputType.phone,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'El teléfono es obligatorio';
+                    if (v.length < 8) return 'Mínimo 8 dígitos';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: direccionCtrl,
+                  decoration: const InputDecoration(labelText: 'Dirección (opcional)', border: OutlineInputBorder()),
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -63,12 +89,13 @@ class _ClientesScreenState extends State<ClientesScreen> {
             onPressed: () async {
               if (formKey.currentState!.validate()) {
                 await widget.repo.insertarCliente(Cliente(
-                  nombre: nombreCtrl.text,
-                  telefono: telefonoCtrl.text,
-                  direccion: direccionCtrl.text.isEmpty ? null : direccionCtrl.text,
+                  nombre: nombreCtrl.text.trim(),
+                  telefono: telefonoCtrl.text.trim(),
+                  direccion: direccionCtrl.text.trim().isEmpty ? null : direccionCtrl.text.trim(),
                 ));
                 if (ctx.mounted) Navigator.pop(ctx);
                 _cargar();
+                _mostrarToast('Cliente guardado con éxito');
               }
             },
             child: const Text('Guardar'),
@@ -81,7 +108,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Clientes')),
       body: _clientes.isEmpty
           ? const Center(child: Text('No hay clientes registrados'))
           : ListView.builder(
