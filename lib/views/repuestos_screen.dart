@@ -71,80 +71,92 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
     final precioCtrl = TextEditingController();
     final stockCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    String? _errorCodigo;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nuevo Repuesto'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nombreCtrl,
-                  decoration: const InputDecoration(labelText: 'Nombre *', border: OutlineInputBorder()),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text('Nuevo Repuesto'),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: nombreCtrl,
+                      decoration: const InputDecoration(labelText: 'Nombre *', border: OutlineInputBorder()),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: codigoCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Código *',
+                        border: const OutlineInputBorder(),
+                        errorText: _errorCodigo, // Mostramos el error aquí
+                      ),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: precioCtrl,
+                      decoration: const InputDecoration(labelText: 'Precio (\$) *', border: OutlineInputBorder()),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Obligatorio';
+                        if (double.tryParse(v) == null) return 'Debe ser un número';
+                        if (double.parse(v) < 0) return 'Debe ser positivo';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: stockCtrl,
+                      decoration: const InputDecoration(labelText: 'Stock inicial *', border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Obligatorio';
+                        if (int.tryParse(v) == null) return 'Debe ser un entero';
+                        if (int.parse(v) < 0) return 'Debe ser positivo';
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: codigoCtrl,
-                  decoration: const InputDecoration(labelText: 'Código *', border: OutlineInputBorder()),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: precioCtrl,
-                  decoration: const InputDecoration(labelText: 'Precio (\$) *', border: OutlineInputBorder()),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Obligatorio';
-                    if (double.tryParse(v) == null) return 'Debe ser un número';
-                    if (double.parse(v) < 0) return 'Debe ser positivo';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: stockCtrl,
-                  decoration: const InputDecoration(labelText: 'Stock inicial *', border: OutlineInputBorder()),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Obligatorio';
-                    if (int.tryParse(v) == null) return 'Debe ser un entero';
-                    if (int.parse(v) < 0) return 'Debe ser positivo';
-                    return null;
-                  },
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final codigo = codigoCtrl.text.trim();
-                if (await widget.repo.existeCodigoRepuesto(codigo)) {
-                  if (ctx.mounted) _mostrarToast('Ese código ya existe', esError: true);
-                  return;
-                }
-                await widget.repo.insertarRepuesto(Repuesto(
-                  nombre: nombreCtrl.text.trim(),
-                  codigo: codigo,
-                  precio: double.parse(precioCtrl.text.trim()),
-                  stock: int.parse(stockCtrl.text.trim()),
-                ));
-                if (ctx.mounted) Navigator.pop(ctx);
-                _cargar();
-                _mostrarToast('Repuesto guardado con éxito');
-              }
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState!.validate()) {
+                    final codigo = codigoCtrl.text.trim();
+                    if (await widget.repo.existeCodigoRepuesto(codigo)) {
+                      setStateDialog(() {
+                        _errorCodigo = 'Ese código ya está registrado';
+                      });
+                      return;
+                    }
+                    setStateDialog(() => _errorCodigo = null);
+                    await widget.repo.insertarRepuesto(Repuesto(
+                      nombre: nombreCtrl.text.trim(),
+                      codigo: codigo,
+                      precio: double.parse(precioCtrl.text.trim()),
+                      stock: int.parse(stockCtrl.text.trim()),
+                    ));
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    _cargar();
+                    _mostrarToast('Repuesto guardado con éxito');
+                  }
+                },
+                child: const Text('Guardar'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

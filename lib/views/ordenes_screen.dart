@@ -164,37 +164,136 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
               itemCount: _ordenes.length,
               itemBuilder: (_, i) {
                 final o = _ordenes[i];
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: _colorEstado(o.estado).withOpacity(0.2),
-                      child: Icon(Icons.build, color: _colorEstado(o.estado)),
-                    ),
-                    title: Text('Orden #${o.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('Vehículo ID: ${o.vehiculoId}\n${o.problema}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Chip(
-                          label: Text(o.estado, style: TextStyle(fontSize: 10, color: _colorEstado(o.estado))),
-                          backgroundColor: _colorEstado(o.estado).withOpacity(0.1),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.red),
-                          onPressed: () => _eliminar(o),
-                        ),
-                      ],
-                    ),
-                    isThreeLine: true,
-                  ),
+                return _OrdenCard(
+                  orden: o,
+                  colorEstado: _colorEstado(o.estado),
+                  onEliminar: () => _eliminar(o),
                 );
               },
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _mostrarFormulario,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+// Widget separado para manejar el estado de "Leer más" / "Leer menos"
+class _OrdenCard extends StatefulWidget {
+  final Orden orden;
+  final Color colorEstado;
+  final VoidCallback onEliminar;
+
+  const _OrdenCard({
+    required this.orden,
+    required this.colorEstado,
+    required this.onEliminar,
+  });
+
+  @override
+  State<_OrdenCard> createState() => _OrdenCardState();
+}
+
+class _OrdenCardState extends State<_OrdenCard> {
+  bool _expandido = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Primera línea: ID, Estado y Botón eliminar
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: widget.colorEstado.withOpacity(0.2),
+                  child: Icon(Icons.build, color: widget.colorEstado, size: 18),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Orden #${widget.orden.id}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: widget.colorEstado.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    widget.orden.estado.replaceAll('_', ' '),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: widget.colorEstado,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: widget.onEliminar,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Segunda línea: Vehículo ID (un poco más pequeño)
+            Text(
+              'Vehículo ID: ${widget.orden.vehiculoId}',
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 4),
+            // Tercera parte: Descripción con "Leer más"
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final textStyle = const TextStyle(fontSize: 13);
+                final textSpan = TextSpan(text: widget.orden.problema, style: textStyle);
+                final tp = TextPainter(
+                  text: textSpan,
+                  maxLines: 2,
+                  textDirection: TextDirection.ltr,
+                );
+                tp.layout(maxWidth: constraints.maxWidth);
+                final excede = tp.didExceedMaxLines;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.orden.problema,
+                      maxLines: _expandido ? null : 2,
+                      overflow: _expandido ? TextOverflow.visible : TextOverflow.ellipsis,
+                      style: textStyle,
+                    ),
+                    if (excede)
+                      GestureDetector(
+                        onTap: () => setState(() => _expandido = !_expandido),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Text(
+                            _expandido ? 'Leer menos' : '...Leer más',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

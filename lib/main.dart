@@ -45,6 +45,38 @@ class _MyAppState extends State<MyApp> {
     await widget.repo.guardarTema(nuevoModo == ThemeMode.dark ? 'dark' : 'light');
   }
 
+  void _mostrarInformacion() {
+    showAboutDialog(
+      context: context,
+      applicationName: 'El Pistón - Gestión de Taller',
+      applicationVersion: '1.0.0',
+      applicationIcon: const Icon(Icons.build, size: 50, color: Colors.orange),
+      children: [
+        const SizedBox(height: 16),
+        const Text(
+          'Aplicación para la gestión de clientes, vehículos, órdenes de servicio y repuestos del taller El Pistón.',
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Desarrollado por:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        const Text(
+          'Yosbiel Alejandro Díaz Cala',
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Asignatura: Programación para Dispositivos Móviles',
+          style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -63,7 +95,11 @@ class _MyAppState extends State<MyApp> {
         fontFamily: 'Poppins',
         appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
       ),
-      home: MainScreen(repo: widget.repo, onCambiarTema: _cambiarTema),
+      home: MainScreen(
+        repo: widget.repo,
+        onCambiarTema: _cambiarTema,
+        onMostrarInfo: _mostrarInformacion,
+      ),
     );
   }
 }
@@ -71,7 +107,8 @@ class _MyAppState extends State<MyApp> {
 class MainScreen extends StatefulWidget {
   final Repositorio repo;
   final VoidCallback onCambiarTema;
-  const MainScreen({super.key, required this.repo, required this.onCambiarTema});
+  final VoidCallback onMostrarInfo;
+  const MainScreen({super.key, required this.repo, required this.onCambiarTema, required this.onMostrarInfo});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -94,6 +131,11 @@ class _MainScreenState extends State<MainScreen> {
         title: Text(_titulos[_index]),
         actions: [
           IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: widget.onMostrarInfo,
+            tooltip: 'Información',
+          ),
+          IconButton(
             icon: Icon(Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode),
             onPressed: widget.onCambiarTema,
             tooltip: 'Cambiar tema',
@@ -101,15 +143,74 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
       body: IndexedStack(index: _index, children: screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.build_circle_outlined), selectedIcon: Icon(Icons.build_circle), label: 'Órdenes'),
-          NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Clientes'),
-          NavigationDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: 'Repuestos'),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _index,
+        onTap: (i) => setState(() => _index = i),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        selectedItemColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        selectedFontSize: 14,
+        unselectedFontSize: 12,
+        selectedIconTheme: const IconThemeData(size: 28),
+        unselectedIconTheme: const IconThemeData(size: 24),
+        items: [
+          _buildItem(
+            context,
+            icon: Icons.build_circle_outlined,
+            selectedIcon: Icons.build_circle,
+            label: 'Órdenes',
+            index: 0,
+          ),
+          _buildItem(
+            context,
+            icon: Icons.people_outline,
+            selectedIcon: Icons.people,
+            label: 'Clientes',
+            index: 1,
+          ),
+          _buildItem(
+            context,
+            icon: Icons.inventory_2_outlined,
+            selectedIcon: Icons.inventory_2,
+            label: 'Repuestos',
+            index: 2,
+          ),
         ],
       ),
+    );
+  }
+
+  BottomNavigationBarItem _buildItem(
+    BuildContext context, {
+    required IconData icon,
+    required IconData selectedIcon,
+    required String label,
+    required int index,
+  }) {
+    final isSelected = _index == index;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return BottomNavigationBarItem(
+      icon: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: isSelected
+            ? BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(20),
+              )
+            : null,
+        child: Icon(icon, color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant),
+      ),
+      activeIcon: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(selectedIcon, color: colorScheme.onPrimaryContainer),
+      ),
+      label: label,
     );
   }
 }

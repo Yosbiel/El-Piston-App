@@ -70,66 +70,78 @@ class _ClientesScreenState extends State<ClientesScreen> {
     final telefonoCtrl = TextEditingController();
     final direccionCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    String? _errorTelefono;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nuevo Cliente'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nombreCtrl,
-                  decoration: const InputDecoration(labelText: 'Nombre *', border: OutlineInputBorder()),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es obligatorio' : null,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text('Nuevo Cliente'),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: nombreCtrl,
+                      decoration: const InputDecoration(labelText: 'Nombre *', border: OutlineInputBorder()),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es obligatorio' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: telefonoCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Teléfono *',
+                        border: const OutlineInputBorder(),
+                        errorText: _errorTelefono, // Mostramos el error aquí
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'El teléfono es obligatorio';
+                        if (v.length < 8) return 'Mínimo 8 dígitos';
+                        if (int.tryParse(v) == null) return 'Debe ser numérico';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: direccionCtrl,
+                      decoration: const InputDecoration(labelText: 'Dirección (opcional)', border: OutlineInputBorder()),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: telefonoCtrl,
-                  decoration: const InputDecoration(labelText: 'Teléfono *', border: OutlineInputBorder()),
-                  keyboardType: TextInputType.phone,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'El teléfono es obligatorio';
-                    if (v.length < 8) return 'Mínimo 8 dígitos';
-                    if (int.tryParse(v) == null) return 'Debe ser numérico';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: direccionCtrl,
-                  decoration: const InputDecoration(labelText: 'Dirección (opcional)', border: OutlineInputBorder()),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final telefono = telefonoCtrl.text.trim();
-                if (await widget.repo.existeTelefono(telefono)) {
-                  if (ctx.mounted) _mostrarToast('Ese teléfono ya está registrado', esError: true);
-                  return;
-                }
-                await widget.repo.insertarCliente(Cliente(
-                  nombre: nombreCtrl.text.trim(),
-                  telefono: telefono,
-                  direccion: direccionCtrl.text.trim().isEmpty ? null : direccionCtrl.text.trim(),
-                ));
-                if (ctx.mounted) Navigator.pop(ctx);
-                _cargar();
-                _mostrarToast('Cliente guardado con éxito');
-              }
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState!.validate()) {
+                    final telefono = telefonoCtrl.text.trim();
+                    if (await widget.repo.existeTelefono(telefono)) {
+                      setStateDialog(() {
+                        _errorTelefono = 'Ese teléfono ya está registrado';
+                      });
+                      return;
+                    }
+                    setStateDialog(() => _errorTelefono = null);
+                    await widget.repo.insertarCliente(Cliente(
+                      nombre: nombreCtrl.text.trim(),
+                      telefono: telefono,
+                      direccion: direccionCtrl.text.trim().isEmpty ? null : direccionCtrl.text.trim(),
+                    ));
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    _cargar();
+                    _mostrarToast('Cliente guardado con éxito');
+                  }
+                },
+                child: const Text('Guardar'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
