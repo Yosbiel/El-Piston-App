@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../data/repositorio.dart';
 import '../models/cliente.dart';
+import '../widgets/animaciones.dart';
+import '../utils/toast.dart';
 
 class ClientesScreen extends StatefulWidget {
   final Repositorio repo;
@@ -24,24 +26,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
     if (mounted) setState(() => _clientes = data);
   }
 
-  void _mostrarToast(String mensaje, {bool esError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(esError ? Icons.error : Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text(mensaje)),
-          ],
-        ),
-        backgroundColor: esError ? Colors.red : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
   void _eliminar(Cliente c) {
     showDialog(
       context: context,
@@ -56,7 +40,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
               await widget.repo.eliminarCliente(c.id!);
               if (ctx.mounted) Navigator.pop(ctx);
               _cargar();
-              _mostrarToast('Cliente eliminado');
+              mostrarToast(context, 'Cliente eliminado');
             },
             child: const Text('Eliminar'),
           ),
@@ -77,25 +61,34 @@ class _ClientesScreenState extends State<ClientesScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) {
           return AlertDialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             title: const Text('Nuevo Cliente'),
             content: Form(
               key: formKey,
               child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextFormField(
                       controller: nombreCtrl,
-                      decoration: const InputDecoration(labelText: 'Nombre *', border: OutlineInputBorder()),
+                      maxLength: 60,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre *',
+                        border: OutlineInputBorder(),
+                        counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                      ),
                       validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es obligatorio' : null,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: telefonoCtrl,
+                      maxLength: 8,
                       decoration: InputDecoration(
                         labelText: 'Teléfono *',
                         border: const OutlineInputBorder(),
-                        errorText: _errorTelefono, // Mostramos el error aquí
+                        errorText: _errorTelefono,
+                        counterStyle: const TextStyle(fontSize: 10, color: Colors.grey),
                       ),
                       keyboardType: TextInputType.phone,
                       validator: (v) {
@@ -105,10 +98,15 @@ class _ClientesScreenState extends State<ClientesScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: direccionCtrl,
-                      decoration: const InputDecoration(labelText: 'Dirección (opcional)', border: OutlineInputBorder()),
+                      maxLength: 100,
+                      decoration: const InputDecoration(
+                        labelText: 'Dirección (opcional)',
+                        border: OutlineInputBorder(),
+                        counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                      ),
                     ),
                   ],
                 ),
@@ -121,9 +119,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                   if (formKey.currentState!.validate()) {
                     final telefono = telefonoCtrl.text.trim();
                     if (await widget.repo.existeTelefono(telefono)) {
-                      setStateDialog(() {
-                        _errorTelefono = 'Ese teléfono ya está registrado';
-                      });
+                      setStateDialog(() => _errorTelefono = 'Ese teléfono ya está registrado');
                       return;
                     }
                     setStateDialog(() => _errorTelefono = null);
@@ -134,7 +130,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                     ));
                     if (ctx.mounted) Navigator.pop(ctx);
                     _cargar();
-                    _mostrarToast('Cliente guardado con éxito');
+                    mostrarToast(context, 'Cliente guardado con éxito');
                   }
                 },
                 child: const Text('Guardar'),
@@ -150,35 +146,35 @@ class _ClientesScreenState extends State<ClientesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _clientes.isEmpty
-          ? const Center(child: Text('No hay clientes registrados'))
+          ? const AnimatedEmptyText(texto: 'No hay clientes registrados')
           : ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: _clientes.length,
               itemBuilder: (_, i) {
                 final c = _clientes[i];
-                return Card(
-                  elevation: 1,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                      child: Text(c.nombre[0].toUpperCase()),
-                    ),
-                    title: Text(c.nombre, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('${c.telefono}${c.direccion != null ? '\n${c.direccion}' : ''}'),
-                    isThreeLine: c.direccion != null,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () => _eliminar(c),
+                return AnimatedCard(
+                  index: i,
+                  child: Card(
+                    elevation: 1,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        child: Text(c.nombre[0].toUpperCase()),
+                      ),
+                      title: Text(c.nombre, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text('${c.telefono}${c.direccion != null ? '\n${c.direccion}' : ''}'),
+                      isThreeLine: c.direccion != null,
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: () => _eliminar(c),
+                      ),
                     ),
                   ),
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _mostrarFormulario,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: AnimatedFab(onPressed: _mostrarFormulario),
     );
   }
 }

@@ -7,15 +7,11 @@ import 'views/repuestos_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final db = AppDatabase(AppDatabase.openConnection());
-  await db.crearTablas();
-  final repo = Repositorio(db);
-  runApp(MyApp(repo: repo));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
-  final Repositorio repo;
-  const MyApp({super.key, required this.repo});
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -23,26 +19,32 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.system;
+  late Future<Repositorio> _initFuture;
 
   @override
   void initState() {
     super.initState();
-    _cargarTema();
+    _initFuture = _inicializarApp();
   }
 
-  void _cargarTema() async {
-    final tema = await widget.repo.obtenerTema();
+  Future<Repositorio> _inicializarApp() async {
+    final db = AppDatabase(AppDatabase.openConnection());
+    await db.crearTablas();
+    final repo = Repositorio(db);
+    final tema = await repo.obtenerTema();
     if (tema != null && mounted) {
       setState(() {
         _themeMode = tema == 'dark' ? ThemeMode.dark : ThemeMode.light;
       });
     }
+    return repo;
   }
 
   void _cambiarTema() async {
     final nuevoModo = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     setState(() => _themeMode = nuevoModo);
-    await widget.repo.guardarTema(nuevoModo == ThemeMode.dark ? 'dark' : 'light');
+    final repo = await _initFuture;
+    await repo.guardarTema(nuevoModo == ThemeMode.dark ? 'dark' : 'light');
   }
 
   @override
@@ -55,17 +57,50 @@ class _MyAppState extends State<MyApp> {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE65100), brightness: Brightness.light),
         fontFamily: 'Poppins',
-        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+        appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE65100), brightness: Brightness.dark),
         fontFamily: 'Poppins',
-        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+        appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
       ),
-      home: MainScreen(
-        repo: widget.repo,
-        onCambiarTema: _cambiarTema,
+      home: FutureBuilder<Repositorio>(
+        future: _initFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const _PantallaCarga();
+          }
+          if (snapshot.hasError) {
+            return Scaffold(body: Center(child: Text('Error: ${snapshot.error}')));
+          }
+          final repo = snapshot.data!;
+          return MainScreen(repo: repo, onCambiarTema: _cambiarTema);
+        },
+      ),
+    );
+  }
+}
+
+class _PantallaCarga extends StatelessWidget {
+  const _PantallaCarga();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.build, size: 80, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 24),
+            const Text('El Pistón', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 32),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            const Text('Cargando taller...', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
       ),
     );
   }
@@ -82,37 +117,37 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _index = 0;
+  final PageController _pageController = PageController();
   final _titulos = ['Órdenes de Servicio', 'Clientes', 'Inventario de Repuestos'];
 
   void _mostrarInformacion() {
-    showAboutDialog(
-      context: context, // <-- Ahora este context está dentro del MaterialApp
-      applicationName: 'El Pistón - Gestión de Taller',
-      applicationVersion: '1.0.0',
-      applicationIcon: const Icon(Icons.build, size: 50, color: Colors.orange),
-      children: [
-        const SizedBox(height: 16),
-        const Text(
-          'Aplicación para la gestión de clientes, vehículos, órdenes de servicio y repuestos del taller El Pistón.',
-          textAlign: TextAlign.center,
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.build, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('El Pistón'),
+          ],
         ),
-        const SizedBox(height: 16),
-        const Text(
-          'Desarrollado por:',
-          style: TextStyle(fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Text('Gestión de Taller', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            SizedBox(height: 12),
+            Text('Aplicación para la gestión de clientes, vehículos, órdenes de servicio y repuestos del taller El Pistón.', textAlign: TextAlign.center),
+            SizedBox(height: 16),
+            Text('Desarrollado por:', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Yosbiel Alejandro Díaz Cala'),
+            SizedBox(height: 8),
+            Text('Asignatura: Programación para Dispositivos Móviles', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
+          ],
         ),
-        const Text(
-          'Yosbiel Alejandro Díaz Cala',
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Asignatura: Programación para Dispositivos Móviles',
-          style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-          textAlign: TextAlign.center,
-        ),
-      ],
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar')),
+        ],
+      ),
     );
   }
 
@@ -130,7 +165,7 @@ class _MainScreenState extends State<MainScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
-            onPressed: _mostrarInformacion, // <-- Llamada directa
+            onPressed: _mostrarInformacion,
             tooltip: 'Información',
           ),
           IconButton(
@@ -140,10 +175,16 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      body: IndexedStack(index: _index, children: screens),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (i) => setState(() => _index = i),
+        children: screens,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
+        onTap: (i) {
+          _pageController.animateToPage(i, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+        },
         type: BottomNavigationBarType.fixed,
         backgroundColor: Theme.of(context).colorScheme.surface,
         selectedItemColor: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -161,33 +202,18 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  BottomNavigationBarItem _buildItem(
-    BuildContext context, {
-    required IconData icon,
-    required IconData selectedIcon,
-    required String label,
-    required int index,
-  }) {
+  BottomNavigationBarItem _buildItem(BuildContext context, {required IconData icon, required IconData selectedIcon, required String label, required int index}) {
     final isSelected = _index == index;
     final colorScheme = Theme.of(context).colorScheme;
-
     return BottomNavigationBarItem(
       icon: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: isSelected
-            ? BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(20),
-              )
-            : null,
+        decoration: isSelected ? BoxDecoration(color: colorScheme.primaryContainer, borderRadius: BorderRadius.circular(20)) : null,
         child: Icon(icon, color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant),
       ),
       activeIcon: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(
-          color: colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(20),
-        ),
+        decoration: BoxDecoration(color: colorScheme.primaryContainer, borderRadius: BorderRadius.circular(20)),
         child: Icon(selectedIcon, color: colorScheme.onPrimaryContainer),
       ),
       label: label,

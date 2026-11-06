@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../data/repositorio.dart';
 import '../models/orden.dart';
+import '../widgets/animaciones.dart';
+import '../utils/toast.dart';
 
 class OrdenesScreen extends StatefulWidget {
   final Repositorio repo;
@@ -22,24 +24,6 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
   void _cargar() async {
     final data = await widget.repo.obtenerOrdenes();
     if (mounted) setState(() => _ordenes = data);
-  }
-
-  void _mostrarToast(String mensaje, {bool esError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(esError ? Icons.error : Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text(mensaje)),
-          ],
-        ),
-        backgroundColor: esError ? Colors.red : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   Color _colorEstado(String estado) {
@@ -68,7 +52,7 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
               await widget.repo.eliminarOrden(o.id!);
               if (ctx.mounted) Navigator.pop(ctx);
               _cargar();
-              _mostrarToast('Orden eliminada');
+              mostrarToast(context, 'Orden eliminada');
             },
             child: const Text('Eliminar'),
           ),
@@ -86,16 +70,23 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         title: const Text('Nueva Orden'),
         content: Form(
           key: formKey,
           child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextFormField(
                   controller: vehiculoCtrl,
-                  decoration: const InputDecoration(labelText: 'ID del Vehículo *', border: OutlineInputBorder()),
+                  maxLength: 6,
+                  decoration: const InputDecoration(
+                    labelText: 'ID del Vehículo *',
+                    border: OutlineInputBorder(),
+                    counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
                   keyboardType: TextInputType.number,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Obligatorio';
@@ -104,14 +95,19 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: problemaCtrl,
-                  decoration: const InputDecoration(labelText: 'Problema reportado *', border: OutlineInputBorder()),
-                  maxLines: 2,
+                  maxLength: 200,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Problema reportado *',
+                    border: OutlineInputBorder(),
+                    counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: estadoSeleccionado,
                   decoration: const InputDecoration(labelText: 'Estado', border: OutlineInputBorder()),
@@ -144,7 +140,7 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
                 ));
                 if (ctx.mounted) Navigator.pop(ctx);
                 _cargar();
-                _mostrarToast('Orden creada con éxito');
+                mostrarToast(context, 'Orden creada con éxito');
               }
             },
             child: const Text('Guardar'),
@@ -158,38 +154,33 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _ordenes.isEmpty
-          ? const Center(child: Text('No hay órdenes registradas'))
+          ? const AnimatedEmptyText(texto: 'No hay órdenes registradas')
           : ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: _ordenes.length,
               itemBuilder: (_, i) {
                 final o = _ordenes[i];
-                return _OrdenCard(
-                  orden: o,
-                  colorEstado: _colorEstado(o.estado),
-                  onEliminar: () => _eliminar(o),
+                return AnimatedCard(
+                  index: i,
+                  child: _OrdenCard(
+                    orden: o,
+                    colorEstado: _colorEstado(o.estado),
+                    onEliminar: () => _eliminar(o),
+                  ),
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _mostrarFormulario,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: AnimatedFab(onPressed: _mostrarFormulario),
     );
   }
 }
 
-// Widget separado para manejar el estado de "Leer más" / "Leer menos"
 class _OrdenCard extends StatefulWidget {
   final Orden orden;
   final Color colorEstado;
   final VoidCallback onEliminar;
 
-  const _OrdenCard({
-    required this.orden,
-    required this.colorEstado,
-    required this.onEliminar,
-  });
+  const _OrdenCard({required this.orden, required this.colorEstado, required this.onEliminar});
 
   @override
   State<_OrdenCard> createState() => _OrdenCardState();
@@ -208,7 +199,6 @@ class _OrdenCardState extends State<_OrdenCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Primera línea: ID, Estado y Botón eliminar
             Row(
               children: [
                 CircleAvatar(
@@ -218,10 +208,7 @@ class _OrdenCardState extends State<_OrdenCard> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    'Orden #${widget.orden.id}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+                  child: Text('Orden #${widget.orden.id}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -231,11 +218,7 @@ class _OrdenCardState extends State<_OrdenCard> {
                   ),
                   child: Text(
                     widget.orden.estado.replaceAll('_', ' '),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: widget.colorEstado,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 10, color: widget.colorEstado, fontWeight: FontWeight.bold),
                   ),
                 ),
                 IconButton(
@@ -245,22 +228,13 @@ class _OrdenCardState extends State<_OrdenCard> {
               ],
             ),
             const SizedBox(height: 8),
-            // Segunda línea: Vehículo ID (un poco más pequeño)
-            Text(
-              'Vehículo ID: ${widget.orden.vehiculoId}',
-              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ),
+            Text('Vehículo ID: ${widget.orden.vehiculoId}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 4),
-            // Tercera parte: Descripción con "Leer más"
             LayoutBuilder(
               builder: (context, constraints) {
                 final textStyle = const TextStyle(fontSize: 13);
                 final textSpan = TextSpan(text: widget.orden.problema, style: textStyle);
-                final tp = TextPainter(
-                  text: textSpan,
-                  maxLines: 2,
-                  textDirection: TextDirection.ltr,
-                );
+                final tp = TextPainter(text: textSpan, maxLines: 2, textDirection: TextDirection.ltr);
                 tp.layout(maxWidth: constraints.maxWidth);
                 final excede = tp.didExceedMaxLines;
 
@@ -280,11 +254,7 @@ class _OrdenCardState extends State<_OrdenCard> {
                           padding: const EdgeInsets.only(top: 4.0),
                           child: Text(
                             _expandido ? 'Leer menos' : '...Leer más',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
+                            style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12),
                           ),
                         ),
                       ),
