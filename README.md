@@ -14,7 +14,7 @@
   <li><b>Flutter</b>: Framework de desarrollo para la interfaz de usuario.</li>
   <li><b>Drift (SQLite)</b>: Base de datos local para la persistencia de datos.</li>
   <li><b>Material 3</b>: Sistema de diseño para una interfaz moderna y adaptable.</li>
-  <li><b>Persistencia sin generador de código</b>: Se optó por utilizar Drift escribiendo las consultas SQL directamente (<code>customSelect</code>, <code>customInsert</code>, etc.) en lugar de usar el generador de código (<code>build_runner</code>). Esta decisión mantiene el proyecto más ligero, reduce las dependencias y facilita la compilación en cualquier entorno.</li>
+  <li><b>Capa de persistencia con SQL explícito</b>: Para la gestión de datos se utilizó Drift, implementando las consultas SQL de forma directa en el repositorio en lugar de recurrir a la generación automática de código. Esta decisión de diseño mantiene la lógica de la base de datos centralizada, transparente y fácilmente auditable, permitiendo un control preciso sobre cada operación y una estructura de proyecto más ligera y cohesionada.</li>
 </ul>
 
 <h2>Requisitos e Instalación</h2>
@@ -53,7 +53,7 @@
 <h2>Decisiones de Diseño</h2>
 <ul>
   <li><b>Interfaz y Colores:</b> Se eligió una paleta basada en un naranja industrial (<code>#E65100</code>) para evocar la temática del taller mecánico, junto con una tipografía moderna (Poppins) para mejorar la legibilidad.</li>
-  <li><b>Experiencia de Usuario (UX):</b> Se implementaron animaciones sutiles (fade in, slide up) al cargar las listas y un efecto "boing-boing" en el botón de agregar, para que la aplicación se sienta fluida y viva. Los diálogos de formulario tienen un ancho fijo para evitar que se estiren con textos largos.</li>
+  <li><b>Experiencia de Usuario (UX):</b> Se implementaron animaciones sutiles de entrada (fade in y slide up) al cargar las listas, y una animación de escala en el botón de agregar para invitar a la interacción. Los diálogos de formulario tienen un ancho fijo para evitar que se estiren con textos largos.</li>
   <li><b>Validaciones:</b> Se implementaron validaciones en tiempo real para evitar duplicados (teléfonos de clientes y códigos de repuestos), así como la verificación de campos obligatorios y formatos numéricos. Los mensajes de error se muestran dentro del mismo diálogo para no perder los datos ingresados.</li>
   <li><b>Persistencia del Tema:</b> El modo claro/oscuro se guarda en la base de datos, de modo que la preferencia del usuario se mantiene incluso después de cerrar la aplicación.</li>
   <li><b>Listas Largas:</b> En la pantalla de órdenes, los problemas reportados que exceden las dos líneas se muestran con un botón de "...Leer más" que permite expandir el texto sin romper la estética de la lista.</li>
