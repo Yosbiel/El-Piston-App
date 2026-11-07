@@ -9,7 +9,6 @@ import 'package:path/path.dart' as p;
 class AppDatabase extends GeneratedDatabase {
   AppDatabase(QueryExecutor e) : super(e);
 
-  /// Abre la conexión a la base de datos local (archivo .sqlite en el teléfono).
   static QueryExecutor openConnection() {
     return LazyDatabase(() async {
       final dbFolder = await getApplicationDocumentsDirectory();
@@ -18,37 +17,34 @@ class AppDatabase extends GeneratedDatabase {
     });
   }
 
-  // Como no usamos el generador de Drift, esta lista va vacía.
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => [];
-
   @override
   int get schemaVersion => 1;
 
-  /// Crea todas las tablas necesarias si no existen al iniciar la app.
   Future<void> crearTablas() async {
-    // Tabla de clientes: nombre, teléfono y dirección opcional.
+    // Tabla de clientes
     await customStatement('''CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, telefono TEXT NOT NULL, direccion TEXT)''');
 
-    // Tabla de vehículos: cada vehículo pertenece a un cliente.
+    // Tabla de vehículos
     await customStatement('''CREATE TABLE IF NOT EXISTS vehiculos (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente_id INTEGER NOT NULL, matricula TEXT NOT NULL, marca TEXT NOT NULL, modelo TEXT NOT NULL, anio INTEGER, kilometraje INTEGER, FOREIGN KEY (cliente_id) REFERENCES clientes (id))''');
 
-    // Tabla de mecánicos: nombre de cada mecánico del taller.
+    // Tabla de mecánicos
     await customStatement('''CREATE TABLE IF NOT EXISTS mecanicos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL)''');
 
-    // Tabla de órdenes: cada orden está vinculada a un vehículo y a un mecánico.
-    await customStatement('''CREATE TABLE IF NOT EXISTS ordenes (id INTEGER PRIMARY KEY AUTOINCREMENT, vehiculo_id INTEGER NOT NULL, mecanico_id INTEGER, fecha_entrada TEXT NOT NULL, problema TEXT NOT NULL, estado TEXT NOT NULL DEFAULT 'recibida', FOREIGN KEY (vehiculo_id) REFERENCES vehiculos (id), FOREIGN KEY (mecanico_id) REFERENCES mecanicos (id))''');
+    // Tabla de órdenes (con el nuevo campo 'pagado')
+    await customStatement('''CREATE TABLE IF NOT EXISTS ordenes (id INTEGER PRIMARY KEY AUTOINCREMENT, vehiculo_id INTEGER NOT NULL, mecanico_id INTEGER, fecha_entrada TEXT NOT NULL, problema TEXT NOT NULL, estado TEXT NOT NULL DEFAULT 'recibida', pagado REAL NOT NULL DEFAULT 0.0, FOREIGN KEY (vehiculo_id) REFERENCES vehiculos (id), FOREIGN KEY (mecanico_id) REFERENCES mecanicos (id))''');
 
-    // Tabla de trabajos: mano de obra realizada en una orden.
+    // Tabla de trabajos
     await customStatement('''CREATE TABLE IF NOT EXISTS trabajos (id INTEGER PRIMARY KEY AUTOINCREMENT, orden_id INTEGER NOT NULL, descripcion TEXT NOT NULL, precio REAL NOT NULL, FOREIGN KEY (orden_id) REFERENCES ordenes (id))''');
 
-    // Tabla de repuestos: inventario del taller (el código es único).
+    // Tabla de repuestos
     await customStatement('''CREATE TABLE IF NOT EXISTS repuestos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE, precio REAL NOT NULL, stock INTEGER NOT NULL DEFAULT 0)''');
 
-    // Tabla de repuestos usados: relaciona una orden con los repuestos que consumió.
+    // Tabla de repuestos usados
     await customStatement('''CREATE TABLE IF NOT EXISTS repuestos_usados (id INTEGER PRIMARY KEY AUTOINCREMENT, orden_id INTEGER NOT NULL, repuesto_id INTEGER NOT NULL, cantidad INTEGER NOT NULL, FOREIGN KEY (orden_id) REFERENCES ordenes (id), FOREIGN KEY (repuesto_id) REFERENCES repuestos (id))''');
 
-    // Tabla de configuración: guarda el tema (claro/oscuro) para que no se resetee.
+    // Tabla de configuración
     await customStatement('''CREATE TABLE IF NOT EXISTS configuracion (clave TEXT PRIMARY KEY, valor TEXT)''');
   }
 }
