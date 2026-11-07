@@ -1,0 +1,67 @@
+<h1 align="center">El Pistón - Gestión de Taller</h1>
+
+<p align="center">
+  Proyecto práctico para la asignatura <b>Programación para Dispositivos Móviles</b> (Ingeniería Informática, 3er año).
+</p>
+
+---
+
+<h2>Descripción</h2>
+<p><b>El Pistón</b> es una aplicación móvil desarrollada en Flutter para la gestión integral de un taller mecánico. Permite al personal administrativo registrar clientes, gestionar el inventario de repuestos y llevar un control detallado de las órdenes de servicio, incluyendo el estado de cada reparación y el mecánico asignado. Toda la información se almacena localmente en el dispositivo, garantizando su disponibilidad sin necesidad de conexión a internet.</p>
+
+<h2>Tecnologías y Arquitectura</h2>
+<ul>
+  <li><b>Flutter</b>: Framework de desarrollo para la interfaz de usuario.</li>
+  <li><b>Drift (SQLite)</b>: Base de datos local para la persistencia de datos.</li>
+  <li><b>Material 3</b>: Sistema de diseño para una interfaz moderna y adaptable.</li>
+  <li><b>Persistencia sin generador de código</b>: Se optó por utilizar Drift escribiendo las consultas SQL directamente (<code>customSelect</code>, <code>customInsert</code>, etc.) en lugar de usar el generador de código (<code>build_runner</code>). Esta decisión mantiene el proyecto más ligero, reduce las dependencias y facilita la compilación en cualquier entorno.</li>
+</ul>
+
+<h2>Requisitos e Instalación</h2>
+
+<h3>Versión de Flutter</h3>
+<p>El proyecto fue desarrollado utilizando <b>Flutter 3.47.7</b> (Dart 3.13.5) y el <b>Android SDK</b> configurado por defecto.</p>
+
+<h3>Application ID</h3>
+<p>El identificador de la aplicación es: <br>
+<code>com.yosbielalejandro.piston</code></p>
+
+<h3>Cómo inicializar y ejecutar el proyecto</h3>
+<ol>
+  <li>Clona el repositorio: <br><code>git clone https://github.com/Yosbiel/El-Piston-App.git</code></li>
+  <li>Accede al directorio: <br><code>cd El-Piston-App</code></li>
+  <li>Obtén las dependencias: <br><code>flutter pub get</code></li>
+  <li>Ejecuta la app en un emulador o dispositivo físico: <br><code>flutter run</code></li>
+</ol>
+
+<h3>Cómo generar el APK en modo Release</h3>
+<p>Para generar el archivo instalable, ejecuta:</p>
+<pre><code>flutter build apk --release</code></pre>
+<p>El APK se generará en la ruta: <br>
+<code>build/app/outputs/flutter-apk/app-release.apk</code></p>
+
+<h2>Estructura de Carpetas</h2>
+<p>El código está organizado manteniendo la separación de responsabilidades:</p>
+<ul>
+  <li><code>lib/data/</code>: Contiene la configuración de la base de datos (<code>database.dart</code>) y el repositorio con toda la lógica de negocio y consultas SQL (<code>repositorio.dart</code>).</li>
+  <li><code>lib/models/</code>: Clases de datos (<code>Cliente</code>, <code>Vehiculo</code>, <code>Orden</code>, <code>Repuesto</code>, <code>Trabajo</code>) con sus métodos <code>fromMap</code> y <code>toMap</code>.</li>
+  <li><code>lib/views/</code>: Pantallas de la interfaz de usuario (Órdenes, Clientes, Repuestos).</li>
+  <li><code>lib/widgets/</code>: Widgets reutilizables, como las animaciones personalizadas.</li>
+  <li><code>lib/utils/</code>: Utilidades compartidas, como la función para mostrar los toasts.</li>
+</ul>
+
+<h2>Decisiones de Diseño</h2>
+<ul>
+  <li><b>Interfaz y Colores:</b> Se eligió una paleta basada en un naranja industrial (<code>#E65100</code>) para evocar la temática del taller mecánico, junto con una tipografía moderna (Poppins) para mejorar la legibilidad.</li>
+  <li><b>Experiencia de Usuario (UX):</b> Se implementaron animaciones sutiles (fade in, slide up) al cargar las listas y un efecto "boing-boing" en el botón de agregar, para que la aplicación se sienta fluida y viva. Los diálogos de formulario tienen un ancho fijo para evitar que se estiren con textos largos.</li>
+  <li><b>Validaciones:</b> Se implementaron validaciones en tiempo real para evitar duplicados (teléfonos de clientes y códigos de repuestos), así como la verificación de campos obligatorios y formatos numéricos. Los mensajes de error se muestran dentro del mismo diálogo para no perder los datos ingresados.</li>
+  <li><b>Persistencia del Tema:</b> El modo claro/oscuro se guarda en la base de datos, de modo que la preferencia del usuario se mantiene incluso después de cerrar la aplicación.</li>
+  <li><b>Listas Largas:</b> En la pantalla de órdenes, los problemas reportados que exceden las dos líneas se muestran con un botón de "...Leer más" que permite expandir el texto sin romper la estética de la lista.</li>
+</ul>
+
+<h2>Capturas de Pantalla</h2>
+<p>Las capturas reales de la aplicación en funcionamiento (modo claro y oscuro, formularios con validaciones, listados, etc.) se encuentran en la carpeta <a href="capturas/">capturas/</a>.</p>
+
+---
+
+<p align="center"><i>Desarrollado por Yosbiel Alejandro Díaz Cala.</i></p>
