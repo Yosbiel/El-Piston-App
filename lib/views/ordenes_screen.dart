@@ -19,6 +19,7 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
   List<Orden> _ordenes = [];
   List<Vehiculo> _vehiculos = [];
   List<Mecanico> _mecanicos = [];
+  String _busqueda = '';
 
   @override
   void initState() {
@@ -31,6 +32,14 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
     final v = await widget.repo.obtenerVehiculos();
     final m = await widget.repo.obtenerMecanicos();
     if (mounted) setState(() { _ordenes = o; _vehiculos = v; _mecanicos = m; });
+  }
+
+  List<Orden> get _filtradas {
+    if (_busqueda.isEmpty) return _ordenes;
+    final q = _busqueda.toLowerCase();
+    return _ordenes.where((o) =>
+      o.problema.toLowerCase().contains(q) || o.id.toString().contains(q)
+    ).toList();
   }
 
   Color _colorEstado(String estado) {
@@ -69,14 +78,8 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
   }
 
   void _mostrarFormulario() {
-    if (_vehiculos.isEmpty) {
-      mostrarToast(context, 'Primero registra un vehículo', esError: true);
-      return;
-    }
-    if (_mecanicos.isEmpty) {
-      mostrarToast(context, 'Primero registra un mecánico', esError: true);
-      return;
-    }
+    if (_vehiculos.isEmpty) { mostrarToast(context, 'Primero registra un vehículo', esError: true); return; }
+    if (_mecanicos.isEmpty) { mostrarToast(context, 'Primero registra un mecánico', esError: true); return; }
 
     final problemaCtrl = TextEditingController();
     int? vehiculoSeleccionado = _vehiculos.first.id;
@@ -168,28 +171,46 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filtradas = _filtradas;
     return Scaffold(
-      body: _ordenes.isEmpty
-          ? const AnimatedEmptyText(texto: 'No hay órdenes registradas')
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _ordenes.length,
-              itemBuilder: (_, i) {
-                final o = _ordenes[i];
-                return AnimatedCard(
-                  index: i,
-                  child: _OrdenCard(
-                    orden: o,
-                    colorEstado: _colorEstado(o.estado),
-                    onEliminar: () => _eliminar(o),
-                    onTap: () async {
-                      await Navigator.push(context, MaterialPageRoute(builder: (_) => DetalleOrdenScreen(repo: widget.repo, ordenId: o.id!)));
-                      _cargar();
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Buscar por problema o ID de orden...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (v) => setState(() => _busqueda = v),
+            ),
+          ),
+          Expanded(
+            child: filtradas.isEmpty
+                ? const AnimatedEmptyText(texto: 'No hay órdenes registradas')
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: filtradas.length,
+                    itemBuilder: (_, i) {
+                      final o = filtradas[i];
+                      return AnimatedCard(
+                        index: i,
+                        child: _OrdenCard(
+                          orden: o,
+                          colorEstado: _colorEstado(o.estado),
+                          onEliminar: () => _eliminar(o),
+                          onTap: () async {
+                            await Navigator.push(context, MaterialPageRoute(builder: (_) => DetalleOrdenScreen(repo: widget.repo, ordenId: o.id!)));
+                            _cargar();
+                          },
+                        ),
+                      );
                     },
                   ),
-                );
-              },
-            ),
+          ),
+        ],
+      ),
       floatingActionButton: AnimatedFab(onPressed: _mostrarFormulario),
     );
   }
@@ -225,11 +246,7 @@ class _OrdenCardState extends State<_OrdenCard> {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: widget.colorEstado.withOpacity(0.2),
-                    child: Icon(Icons.build, color: widget.colorEstado, size: 18),
-                  ),
+                  CircleAvatar(radius: 16, backgroundColor: widget.colorEstado.withOpacity(0.2), child: Icon(Icons.build, color: widget.colorEstado, size: 18)),
                   const SizedBox(width: 8),
                   Expanded(child: Text('Orden #${widget.orden.id}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
                   Container(

@@ -37,6 +37,13 @@ class _DetalleOrdenScreenState extends State<DetalleOrdenScreen> {
   double get _totalTrabajos => _trabajos.fold(0.0, (s, t) => s + t.precio);
   double get _totalGeneral => _totalTrabajos + _costoRepuestos;
   double get _saldoPendiente => _totalGeneral - (_orden?.pagado ?? 0.0);
+  bool get _cerrada => _orden!.estado == 'entregada' || _orden!.estado == 'cancelada';
+
+  void _cambiarEstado(String nuevoEstado) async {
+    await widget.repo.actualizarEstadoOrden(widget.ordenId, nuevoEstado);
+    _cargar();
+    mostrarToast(context, 'Estado cambiado a ${nuevoEstado.replaceAll('_', ' ')}');
+  }
 
   void _agregarTrabajo() {
     final descCtrl = TextEditingController();
@@ -214,7 +221,21 @@ class _DetalleOrdenScreenState extends State<DetalleOrdenScreen> {
     if (_orden == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     return Scaffold(
-      appBar: AppBar(title: Text('Orden #${_orden!.id}')),
+      appBar: AppBar(
+        title: Text('Orden #${_orden!.id}'),
+        actions: [
+          // El menú de estado solo aparece si la orden no está cerrada
+          if (!_cerrada)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.edit),
+              tooltip: 'Cambiar estado',
+              onSelected: _cambiarEstado,
+              itemBuilder: (context) => [
+                'recibida', 'en_diagnostico', 'en_reparacion', 'lista', 'entregada', 'cancelada'
+              ].map((e) => PopupMenuItem(value: e, child: Text(e.replaceAll('_', ' ').toUpperCase()))).toList(),
+            ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
@@ -228,7 +249,7 @@ class _DetalleOrdenScreenState extends State<DetalleOrdenScreen> {
           const SizedBox(height: 12),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text('Trabajos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            TextButton.icon(icon: const Icon(Icons.add), label: const Text('Agregar'), onPressed: _agregarTrabajo),
+            if (!_cerrada) TextButton.icon(icon: const Icon(Icons.add), label: const Text('Agregar'), onPressed: _agregarTrabajo),
           ]),
           ..._trabajos.map((t) => ListTile(
             dense: true,
@@ -239,7 +260,7 @@ class _DetalleOrdenScreenState extends State<DetalleOrdenScreen> {
           const Divider(),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text('Repuestos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            TextButton.icon(icon: const Icon(Icons.add), label: const Text('Usar'), onPressed: _agregarRepuesto),
+            if (!_cerrada) TextButton.icon(icon: const Icon(Icons.add), label: const Text('Usar'), onPressed: _agregarRepuesto),
           ]),
           ListTile(dense: true, title: const Text('Costo de repuestos'), trailing: Text('\$${_costoRepuestos.toStringAsFixed(2)}')),
           const Divider(),
@@ -257,11 +278,12 @@ class _DetalleOrdenScreenState extends State<DetalleOrdenScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.payment),
-            label: const Text('Registrar Pago'),
-            onPressed: _saldoPendiente > 0 ? _registrarPago : null,
-          ),
+          if (!_cerrada)
+            ElevatedButton.icon(
+              icon: const Icon(Icons.payment),
+              label: const Text('Registrar Pago'),
+              onPressed: _saldoPendiente > 0 ? _registrarPago : null,
+            ),
         ],
       ),
     );

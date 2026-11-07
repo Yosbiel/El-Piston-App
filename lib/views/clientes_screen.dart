@@ -14,6 +14,7 @@ class ClientesScreen extends StatefulWidget {
 
 class _ClientesScreenState extends State<ClientesScreen> {
   List<Cliente> _clientes = [];
+  String _busqueda = '';
 
   @override
   void initState() {
@@ -24,6 +25,20 @@ class _ClientesScreenState extends State<ClientesScreen> {
   void _cargar() async {
     final data = await widget.repo.obtenerClientes();
     if (mounted) setState(() => _clientes = data);
+  }
+
+  String _normalizar(String texto) {
+    return texto.toLowerCase()
+      .replaceAll('á', 'a').replaceAll('é', 'e').replaceAll('í', 'i')
+      .replaceAll('ó', 'o').replaceAll('ú', 'u').replaceAll('ñ', 'n');
+  }
+
+  List<Cliente> get _filtrados {
+    if (_busqueda.isEmpty) return _clientes;
+    final q = _normalizar(_busqueda);
+    return _clientes.where((c) =>
+      _normalizar(c.nombre).contains(q) || c.telefono.contains(_busqueda)
+    ).toList();
   }
 
   void _eliminar(Cliente c) {
@@ -75,23 +90,14 @@ class _ClientesScreenState extends State<ClientesScreen> {
                       TextFormField(
                         controller: nombreCtrl,
                         maxLength: 60,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre *',
-                          border: OutlineInputBorder(),
-                          counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
-                        ),
+                        decoration: const InputDecoration(labelText: 'Nombre *', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
                         validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es obligatorio' : null,
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: telefonoCtrl,
                         maxLength: 8,
-                        decoration: InputDecoration(
-                          labelText: 'Teléfono *',
-                          border: const OutlineInputBorder(),
-                          errorText: _errorTelefono,
-                          counterStyle: const TextStyle(fontSize: 10, color: Colors.grey),
-                        ),
+                        decoration: InputDecoration(labelText: 'Teléfono *', border: const OutlineInputBorder(), errorText: _errorTelefono, counterStyle: const TextStyle(fontSize: 10, color: Colors.grey)),
                         keyboardType: TextInputType.phone,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return 'El teléfono es obligatorio';
@@ -104,11 +110,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                       TextFormField(
                         controller: direccionCtrl,
                         maxLength: 100,
-                        decoration: const InputDecoration(
-                          labelText: 'Dirección (opcional)',
-                          border: OutlineInputBorder(),
-                          counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
-                        ),
+                        decoration: const InputDecoration(labelText: 'Dirección (opcional)', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
                       ),
                     ],
                   ),
@@ -147,36 +149,49 @@ class _ClientesScreenState extends State<ClientesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filtrados = _filtrados;
     return Scaffold(
-      body: _clientes.isEmpty
-          ? const AnimatedEmptyText(texto: 'No hay clientes registrados')
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _clientes.length,
-              itemBuilder: (_, i) {
-                final c = _clientes[i];
-                return AnimatedCard(
-                  index: i,
-                  child: Card(
-                    elevation: 1,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                        child: Text(c.nombre[0].toUpperCase()),
-                      ),
-                      title: Text(c.nombre, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text('${c.telefono}${c.direccion != null ? '\n${c.direccion}' : ''}'),
-                      isThreeLine: c.direccion != null,
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: () => _eliminar(c),
-                      ),
-                    ),
-                  ),
-                );
-              },
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Buscar por nombre o teléfono...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (v) => setState(() => _busqueda = v),
             ),
+          ),
+          Expanded(
+            child: filtrados.isEmpty
+                ? const AnimatedEmptyText(texto: 'No hay clientes registrados')
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: filtrados.length,
+                    itemBuilder: (_, i) {
+                      final c = filtrados[i];
+                      return AnimatedCard(
+                        index: i,
+                        child: Card(
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                              child: Text(c.nombre[0].toUpperCase()),
+                            ),
+                            title: Text(c.nombre, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            subtitle: Text('${c.telefono}${c.direccion != null ? '\n${c.direccion}' : ''}'),
+                            isThreeLine: c.direccion != null,
+                            trailing: IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => _eliminar(c)),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: AnimatedFab(onPressed: _mostrarFormulario),
     );
   }

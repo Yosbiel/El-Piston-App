@@ -14,6 +14,7 @@ class RepuestosScreen extends StatefulWidget {
 
 class _RepuestosScreenState extends State<RepuestosScreen> {
   List<Repuesto> _repuestos = [];
+  String _busqueda = '';
 
   @override
   void initState() {
@@ -24,6 +25,14 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
   void _cargar() async {
     final data = await widget.repo.obtenerRepuestos();
     if (mounted) setState(() => _repuestos = data);
+  }
+
+  List<Repuesto> get _filtrados {
+    if (_busqueda.isEmpty) return _repuestos;
+    final q = _busqueda.toLowerCase();
+    return _repuestos.where((r) =>
+      r.nombre.toLowerCase().contains(q) || r.codigo.toLowerCase().contains(q)
+    ).toList();
   }
 
   void _eliminar(Repuesto r) {
@@ -76,34 +85,21 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
                       TextFormField(
                         controller: nombreCtrl,
                         maxLength: 60,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre *',
-                          border: OutlineInputBorder(),
-                          counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
-                        ),
+                        decoration: const InputDecoration(labelText: 'Nombre *', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
                         validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: codigoCtrl,
                         maxLength: 20,
-                        decoration: InputDecoration(
-                          labelText: 'Código *',
-                          border: const OutlineInputBorder(),
-                          errorText: _errorCodigo,
-                          counterStyle: const TextStyle(fontSize: 10, color: Colors.grey),
-                        ),
+                        decoration: InputDecoration(labelText: 'Código *', border: const OutlineInputBorder(), errorText: _errorCodigo, counterStyle: const TextStyle(fontSize: 10, color: Colors.grey)),
                         validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: precioCtrl,
                         maxLength: 10,
-                        decoration: const InputDecoration(
-                          labelText: 'Precio (\$) *',
-                          border: OutlineInputBorder(),
-                          counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
-                        ),
+                        decoration: const InputDecoration(labelText: 'Precio (\$) *', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return 'Obligatorio';
@@ -116,11 +112,7 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
                       TextFormField(
                         controller: stockCtrl,
                         maxLength: 6,
-                        decoration: const InputDecoration(
-                          labelText: 'Stock inicial *',
-                          border: OutlineInputBorder(),
-                          counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
-                        ),
+                        decoration: const InputDecoration(labelText: 'Stock inicial *', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
                         keyboardType: TextInputType.number,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return 'Obligatorio';
@@ -153,7 +145,7 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
                     ));
                     if (ctx.mounted) Navigator.pop(ctx);
                     _cargar();
-                    mostrarToast(context, 'Repuesto guardado con éxito');
+                    mostrarToast(context, 'Repuesto guardado');
                   }
                 },
                 child: const Text('Guardar'),
@@ -167,49 +159,56 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filtrados = _filtrados;
     return Scaffold(
-      body: _repuestos.isEmpty
-          ? const AnimatedEmptyText(texto: 'No hay repuestos en inventario')
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _repuestos.length,
-              itemBuilder: (_, i) {
-                final r = _repuestos[i];
-                final stockBajo = r.stock < 5;
-                return AnimatedCard(
-                  index: i,
-                  child: Card(
-                    elevation: 2,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: Icon(Icons.settings, color: stockBajo ? Colors.red : Colors.grey),
-                      title: Text(r.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('Código: ${r.codigo} | Precio: \$${r.precio.toStringAsFixed(2)}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: stockBajo ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'Stock: ${r.stock}',
-                              style: TextStyle(color: stockBajo ? Colors.red : Colors.green, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
-                            onPressed: () => _eliminar(r),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Buscar por nombre o código...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (v) => setState(() => _busqueda = v),
             ),
+          ),
+          Expanded(
+            child: filtrados.isEmpty
+                ? const AnimatedEmptyText(texto: 'No hay repuestos en inventario')
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: filtrados.length,
+                    itemBuilder: (_, i) {
+                      final r = filtrados[i];
+                      final stockBajo = r.stock < 5;
+                      return AnimatedCard(
+                        index: i,
+                        child: Card(
+                          child: ListTile(
+                            leading: Icon(Icons.settings, color: stockBajo ? Colors.red : Colors.grey),
+                            title: Text(r.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('Código: ${r.codigo} | Precio: \$${r.precio.toStringAsFixed(2)}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(color: stockBajo ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                                  child: Text('Stock: ${r.stock}', style: TextStyle(color: stockBajo ? Colors.red : Colors.green, fontWeight: FontWeight.bold)),
+                                ),
+                                IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => _eliminar(r)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: AnimatedFab(onPressed: _mostrarFormulario),
     );
   }

@@ -16,6 +16,7 @@ class VehiculosScreen extends StatefulWidget {
 class _VehiculosScreenState extends State<VehiculosScreen> {
   List<Vehiculo> _vehiculos = [];
   List<Cliente> _clientes = [];
+  String _busqueda = '';
 
   @override
   void initState() {
@@ -31,6 +32,16 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
 
   String _nombreCliente(int id) {
     try { return _clientes.firstWhere((c) => c.id == id).nombre; } catch (_) { return 'Desconocido'; }
+  }
+
+  List<Vehiculo> get _filtrados {
+    if (_busqueda.isEmpty) return _vehiculos;
+    final q = _busqueda.toLowerCase();
+    return _vehiculos.where((v) =>
+      v.matricula.toLowerCase().contains(q) ||
+      v.marca.toLowerCase().contains(q) ||
+      v.modelo.toLowerCase().contains(q)
+    ).toList();
   }
 
   void _eliminar(Vehiculo v) {
@@ -70,6 +81,7 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
     int? clienteSeleccionado = _clientes.first.id;
     final formKey = GlobalKey<FormState>();
     String? _errorMatricula;
+    final anioActual = DateTime.now().year; // Año actual para el límite
 
     showDialog(
       context: context,
@@ -97,12 +109,7 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
                       TextFormField(
                         controller: matriculaCtrl,
                         maxLength: 15,
-                        decoration: InputDecoration(
-                          labelText: 'Matrícula *',
-                          border: const OutlineInputBorder(),
-                          errorText: _errorMatricula,
-                          counterStyle: const TextStyle(fontSize: 10, color: Colors.grey),
-                        ),
+                        decoration: InputDecoration(labelText: 'Matrícula *', border: const OutlineInputBorder(), errorText: _errorMatricula, counterStyle: const TextStyle(fontSize: 10, color: Colors.grey)),
                         validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
                       ),
                       const SizedBox(height: 8),
@@ -125,6 +132,14 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
                         maxLength: 4,
                         decoration: const InputDecoration(labelText: 'Año', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
                         keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return null; // Opcional
+                          final anio = int.tryParse(v);
+                          if (anio == null) return 'Debe ser un número';
+                          if (anio < 1900) return 'Año inválido (mín. 1900)';
+                          if (anio > anioActual) return 'No puede ser mayor a $anioActual';
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
@@ -173,28 +188,46 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filtrados = _filtrados;
     return Scaffold(
-      body: _vehiculos.isEmpty
-          ? const AnimatedEmptyText(texto: 'No hay vehículos registrados')
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _vehiculos.length,
-              itemBuilder: (_, i) {
-                final v = _vehiculos[i];
-                return AnimatedCard(
-                  index: i,
-                  child: Card(
-                    child: ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.directions_car)),
-                      title: Text('${v.marca} ${v.modelo}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('Matrícula: ${v.matricula}\nCliente: ${_nombreCliente(v.clienteId)}'),
-                      isThreeLine: true,
-                      trailing: IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => _eliminar(v)),
-                    ),
-                  ),
-                );
-              },
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Buscar por matrícula, marca o modelo...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (v) => setState(() => _busqueda = v),
             ),
+          ),
+          Expanded(
+            child: filtrados.isEmpty
+                ? const AnimatedEmptyText(texto: 'No hay vehículos registrados')
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: filtrados.length,
+                    itemBuilder: (_, i) {
+                      final v = filtrados[i];
+                      return AnimatedCard(
+                        index: i,
+                        child: Card(
+                          child: ListTile(
+                            leading: const CircleAvatar(child: Icon(Icons.directions_car)),
+                            title: Text('${v.marca} ${v.modelo}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('Matrícula: ${v.matricula}\nCliente: ${_nombreCliente(v.clienteId)}${v.anio != null ? ' | Año: ${v.anio}' : ''}'),
+                            isThreeLine: true,
+                            trailing: IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => _eliminar(v)),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: AnimatedFab(onPressed: _mostrarFormulario),
     );
   }
