@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-// Animación para las tarjetas (fade + slide up)
+/// Animación para las tarjetas de las listas: aparecen con un fade y un desplazamiento hacia arriba.
+/// El índice se usa para escalonar la animación y que no aparezcan todas al mismo tiempo.
 class AnimatedCard extends StatefulWidget {
   final Widget child;
   final int index;
@@ -21,6 +22,7 @@ class _AnimatedCardState extends State<AnimatedCard> with SingleTickerProviderSt
     _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
     _opacity = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _slide = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    // Se retrasa un poco más para cada tarjeta, creando un efecto de cascada.
     Future.delayed(Duration(milliseconds: widget.index * 50), () {
       if (mounted) _controller.forward();
     });
@@ -41,7 +43,8 @@ class _AnimatedCardState extends State<AnimatedCard> with SingleTickerProviderSt
   }
 }
 
-// Animación para los textos vacíos (fade + slide up con rebote)
+/// Animación para el texto que aparece cuando una lista está vacía.
+/// Usa un rebote suave (easeOutBack) para que sea más llamativo.
 class AnimatedEmptyText extends StatefulWidget {
   final String texto;
   const AnimatedEmptyText({super.key, required this.texto});
@@ -84,7 +87,8 @@ class _AnimatedEmptyTextState extends State<AnimatedEmptyText> with SingleTicker
   }
 }
 
-// Animación para el botón flotante (boing-boing)
+/// Animación para el botón flotante (+): hace un efecto "boing-boing" en bucle
+/// para invitar al usuario a que lo toque.
 class AnimatedFab extends StatefulWidget {
   final VoidCallback onPressed;
   const AnimatedFab({super.key, required this.onPressed});

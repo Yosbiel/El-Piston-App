@@ -21,11 +21,13 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
     _cargar();
   }
 
+  /// Carga las órdenes desde la base de datos y actualiza la interfaz.
   void _cargar() async {
     final data = await widget.repo.obtenerOrdenes();
     if (mounted) setState(() => _ordenes = data);
   }
 
+  /// Devuelve un color diferente según el estado de la orden.
   Color _colorEstado(String estado) {
     switch (estado) {
       case 'recibida': return Colors.blue;
@@ -38,6 +40,7 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
     }
   }
 
+  /// Muestra un diálogo de confirmación para eliminar una orden.
   void _eliminar(Orden o) {
     showDialog(
       context: context,
@@ -61,6 +64,7 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
     );
   }
 
+  /// Muestra el formulario para crear una nueva orden.
   void _mostrarFormulario() {
     final vehiculoCtrl = TextEditingController();
     final problemaCtrl = TextEditingController();
@@ -72,58 +76,62 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
       builder: (ctx) => AlertDialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         title: const Text('Nueva Orden'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: vehiculoCtrl,
-                  maxLength: 6,
-                  decoration: const InputDecoration(
-                    labelText: 'ID del Vehículo *',
-                    border: OutlineInputBorder(),
-                    counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+        // SizedBox con ancho fijo para que el diálogo no se estire con textos largos.
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.85,
+          child: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: vehiculoCtrl,
+                    maxLength: 6,
+                    decoration: const InputDecoration(
+                      labelText: 'ID del Vehículo *',
+                      border: OutlineInputBorder(),
+                      counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Obligatorio';
+                      if (int.tryParse(v) == null) return 'Debe ser un número';
+                      if (int.parse(v) <= 0) return 'Debe ser mayor a 0';
+                      return null;
+                    },
                   ),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Obligatorio';
-                    if (int.tryParse(v) == null) return 'Debe ser un número';
-                    if (int.parse(v) <= 0) return 'Debe ser mayor a 0';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: problemaCtrl,
-                  maxLength: 200,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Problema reportado *',
-                    border: OutlineInputBorder(),
-                    counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: problemaCtrl,
+                    maxLength: 200,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Problema reportado *',
+                      border: OutlineInputBorder(),
+                      counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
                   ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: estadoSeleccionado,
-                  decoration: const InputDecoration(labelText: 'Estado', border: OutlineInputBorder()),
-                  items: const [
-                    DropdownMenuItem(value: 'recibida', child: Text('Recibida')),
-                    DropdownMenuItem(value: 'en_diagnostico', child: Text('En diagnóstico')),
-                    DropdownMenuItem(value: 'en_reparacion', child: Text('En reparación')),
-                    DropdownMenuItem(value: 'lista', child: Text('Lista para entregar')),
-                    DropdownMenuItem(value: 'entregada', child: Text('Entregada')),
-                    DropdownMenuItem(value: 'cancelada', child: Text('Cancelada')),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) estadoSeleccionado = val;
-                  },
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: estadoSeleccionado,
+                    decoration: const InputDecoration(labelText: 'Estado', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'recibida', child: Text('Recibida')),
+                      DropdownMenuItem(value: 'en_diagnostico', child: Text('En diagnóstico')),
+                      DropdownMenuItem(value: 'en_reparacion', child: Text('En reparación')),
+                      DropdownMenuItem(value: 'lista', child: Text('Lista para entregar')),
+                      DropdownMenuItem(value: 'entregada', child: Text('Entregada')),
+                      DropdownMenuItem(value: 'cancelada', child: Text('Cancelada')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) estadoSeleccionado = val;
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -175,6 +183,7 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
   }
 }
 
+/// Tarjeta individual para mostrar una orden. Maneja el estado de "Leer más" / "Leer menos".
 class _OrdenCard extends StatefulWidget {
   final Orden orden;
   final Color colorEstado;
@@ -230,6 +239,7 @@ class _OrdenCardState extends State<_OrdenCard> {
             const SizedBox(height: 8),
             Text('Vehículo ID: ${widget.orden.vehiculoId}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 4),
+            // LayoutBuilder mide el ancho disponible para saber si el texto excede 2 líneas.
             LayoutBuilder(
               builder: (context, constraints) {
                 final textStyle = const TextStyle(fontSize: 13);
@@ -247,6 +257,7 @@ class _OrdenCardState extends State<_OrdenCard> {
                       overflow: _expandido ? TextOverflow.visible : TextOverflow.ellipsis,
                       style: textStyle,
                     ),
+                    // Si el texto excede las 2 líneas, aparece el botón "Leer más".
                     if (excede)
                       GestureDetector(
                         onTap: () => setState(() => _expandido = !_expandido),

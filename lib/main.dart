@@ -24,9 +24,11 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    // Inicia la base de datos en segundo plano mientras se muestra la pantalla de carga.
     _initFuture = _inicializarApp();
   }
 
+  /// Inicializa la base de datos y recupera el tema guardado.
   Future<Repositorio> _inicializarApp() async {
     final db = AppDatabase(AppDatabase.openConnection());
     await db.crearTablas();
@@ -40,6 +42,7 @@ class _MyAppState extends State<MyApp> {
     return repo;
   }
 
+  /// Cambia el tema y lo guarda en la base de datos para que se mantenga.
   void _cambiarTema() async {
     final nuevoModo = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     setState(() => _themeMode = nuevoModo);
@@ -65,6 +68,7 @@ class _MyAppState extends State<MyApp> {
         fontFamily: 'Poppins',
         appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
       ),
+      // Mientras la base de datos se inicializa, se muestra la pantalla de carga.
       home: FutureBuilder<Repositorio>(
         future: _initFuture,
         builder: (context, snapshot) {
@@ -82,6 +86,7 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
+/// Pantalla que se muestra mientras la base de datos se inicializa.
 class _PantallaCarga extends StatelessWidget {
   const _PantallaCarga();
 
@@ -120,6 +125,7 @@ class _MainScreenState extends State<MainScreen> {
   final PageController _pageController = PageController();
   final _titulos = ['Órdenes de Servicio', 'Clientes', 'Inventario de Repuestos'];
 
+  /// Muestra un diálogo con la información del autor y del proyecto.
   void _mostrarInformacion() {
     showDialog(
       context: context,
@@ -175,6 +181,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
+      // PageView permite cambiar de pestaña con una animación de deslizamiento suave.
       body: PageView(
         controller: _pageController,
         onPageChanged: (i) => setState(() => _index = i),
@@ -202,6 +209,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  /// Construye cada ítem de la barra inferior con el efecto de "píldora" en el activo.
   BottomNavigationBarItem _buildItem(BuildContext context, {required IconData icon, required IconData selectedIcon, required String label, required int index}) {
     final isSelected = _index == index;
     final colorScheme = Theme.of(context).colorScheme;

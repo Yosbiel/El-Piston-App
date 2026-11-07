@@ -63,52 +63,55 @@ class _ClientesScreenState extends State<ClientesScreen> {
           return AlertDialog(
             insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             title: const Text('Nuevo Cliente'),
-            content: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: nombreCtrl,
-                      maxLength: 60,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre *',
-                        border: OutlineInputBorder(),
-                        counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.85,
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: nombreCtrl,
+                        maxLength: 60,
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre *',
+                          border: OutlineInputBorder(),
+                          counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es obligatorio' : null,
                       ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es obligatorio' : null,
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: telefonoCtrl,
-                      maxLength: 8,
-                      decoration: InputDecoration(
-                        labelText: 'Teléfono *',
-                        border: const OutlineInputBorder(),
-                        errorText: _errorTelefono,
-                        counterStyle: const TextStyle(fontSize: 10, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: telefonoCtrl,
+                        maxLength: 8,
+                        decoration: InputDecoration(
+                          labelText: 'Teléfono *',
+                          border: const OutlineInputBorder(),
+                          errorText: _errorTelefono,
+                          counterStyle: const TextStyle(fontSize: 10, color: Colors.grey),
+                        ),
+                        keyboardType: TextInputType.phone,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'El teléfono es obligatorio';
+                          if (v.length < 8) return 'Mínimo 8 dígitos';
+                          if (int.tryParse(v) == null) return 'Debe ser numérico';
+                          return null;
+                        },
                       ),
-                      keyboardType: TextInputType.phone,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'El teléfono es obligatorio';
-                        if (v.length < 8) return 'Mínimo 8 dígitos';
-                        if (int.tryParse(v) == null) return 'Debe ser numérico';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: direccionCtrl,
-                      maxLength: 100,
-                      decoration: const InputDecoration(
-                        labelText: 'Dirección (opcional)',
-                        border: OutlineInputBorder(),
-                        counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: direccionCtrl,
+                        maxLength: 100,
+                        decoration: const InputDecoration(
+                          labelText: 'Dirección (opcional)',
+                          border: OutlineInputBorder(),
+                          counterStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
