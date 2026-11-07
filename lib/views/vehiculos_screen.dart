@@ -18,6 +18,10 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
   List<Cliente> _clientes = [];
   String _busqueda = '';
 
+  final List<String> _marcasPredefinidas = [
+    'Toyota', 'Hyundai', 'Kia', 'Nissan', 'Chevrolet', 'Ford', 'Volkswagen', 'Honda', 'Mazda', 'Peugeot', 'Renault', 'Fiat'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -44,7 +48,13 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
     ).toList();
   }
 
-  void _eliminar(Vehiculo v) {
+  void _eliminar(Vehiculo v) async {
+    final tieneOrdenes = await widget.repo.vehiculoTieneOrdenesActivas(v.id!);
+    if (tieneOrdenes) {
+      if (mounted) mostrarToast(context, 'No se puede eliminar: tiene órdenes activas', esError: true);
+      return;
+    }
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -67,21 +77,32 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
     );
   }
 
-  void _mostrarFormulario() {
+  void _mostrarFormulario({Vehiculo? vehiculo}) async {
+    if (vehiculo != null) {
+      final tieneOrdenes = await widget.repo.vehiculoTieneOrdenesActivas(vehiculo.id!);
+      if (tieneOrdenes) {
+        if (mounted) mostrarToast(context, 'No se puede editar: tiene órdenes activas', esError: true);
+        return;
+      }
+    }
     if (_clientes.isEmpty) {
       mostrarToast(context, 'Primero registra un cliente', esError: true);
       return;
     }
 
-    final matriculaCtrl = TextEditingController();
-    final marcaCtrl = TextEditingController();
-    final modeloCtrl = TextEditingController();
-    final anioCtrl = TextEditingController();
-    final kmCtrl = TextEditingController();
-    int? clienteSeleccionado = _clientes.first.id;
+    final matriculaCtrl = TextEditingController(text: vehiculo?.matricula ?? '');
+    final modeloCtrl = TextEditingController(text: vehiculo?.modelo ?? '');
+    final anioCtrl = TextEditingController(text: vehiculo?.anio?.toString() ?? '');
+    final kmCtrl = TextEditingController(text: vehiculo?.kilometraje?.toString() ?? '');
+    int? clienteSeleccionado = vehiculo?.clienteId ?? _clientes.first.id;
+
+    String marcaSeleccionada = vehiculo?.marca ?? _marcasPredefinidas.first;
+    bool agregandoNuevaMarca = false;
+    final nuevaMarcaCtrl = TextEditingController();
+
     final formKey = GlobalKey<FormState>();
     String? _errorMatricula;
-    final anioActual = DateTime.now().year; // Año actual para el límite
+    final anioActual = DateTime.now().year;
 
     showDialog(
       context: context,
@@ -89,7 +110,7 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
         builder: (context, setStateDialog) {
           return AlertDialog(
             insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            title: const Text('Nuevo Vehículo'),
+            title: Text(vehiculo == null ? 'Nuevo Vehículo' : 'Editar Vehículo'),
             content: SizedBox(
               width: MediaQuery.of(context).size.width * 0.85,
               child: Form(
@@ -113,12 +134,39 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
                         validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
                       ),
                       const SizedBox(height: 8),
-                      TextFormField(
-                        controller: marcaCtrl,
-                        maxLength: 30,
-                        decoration: const InputDecoration(labelText: 'Marca *', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
-                      ),
+                      if (!agregandoNuevaMarca)
+                        DropdownButtonFormField<String>(
+                          value: marcaSeleccionada,
+                          decoration: const InputDecoration(labelText: 'Marca *', border: OutlineInputBorder()),
+                          items: [
+                            ..._marcasPredefinidas.map((m) => DropdownMenuItem(value: m, child: Text(m))),
+                            const DropdownMenuItem(value: '__nueva__', child: Text('Otra marca...')),
+                          ],
+                          onChanged: (v) {
+                            if (v == '__nueva__') {
+                              setStateDialog(() => agregandoNuevaMarca = true);
+                            } else if (v != null) {
+                              setStateDialog(() => marcaSeleccionada = v);
+                            }
+                          },
+                        )
+                      else
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: nuevaMarcaCtrl,
+                                maxLength: 30,
+                                decoration: const InputDecoration(labelText: 'Nueva marca *', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
+                                validator: (v) => v == null || v.trim().isEmpty ? 'Obligatorio' : null,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.cancel, color: Colors.red),
+                              onPressed: () => setStateDialog(() => agregandoNuevaMarca = false),
+                            ),
+                          ],
+                        ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: modeloCtrl,
@@ -133,7 +181,7 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
                         decoration: const InputDecoration(labelText: 'Año', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
                         keyboardType: TextInputType.number,
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return null; // Opcional
+                          if (v == null || v.trim().isEmpty) return null;
                           final anio = int.tryParse(v);
                           if (anio == null) return 'Debe ser un número';
                           if (anio < 1900) return 'Año inválido (mín. 1900)';
@@ -159,22 +207,34 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
                 onPressed: () async {
                   if (formKey.currentState!.validate()) {
                     final mat = matriculaCtrl.text.trim();
-                    if (await widget.repo.existeMatricula(mat)) {
+                    if (await widget.repo.existeMatricula(mat, excluirId: vehiculo?.id)) {
                       setStateDialog(() => _errorMatricula = 'Esa matrícula ya existe');
                       return;
                     }
-                    setStateDialog(() => _errorMatricula = null);
-                    await widget.repo.insertarVehiculo(Vehiculo(
-                      clienteId: clienteSeleccionado!,
-                      matricula: mat,
-                      marca: marcaCtrl.text.trim(),
-                      modelo: modeloCtrl.text.trim(),
-                      anio: int.tryParse(anioCtrl.text),
-                      kilometraje: int.tryParse(kmCtrl.text),
-                    ));
+                    final marcaFinal = agregandoNuevaMarca ? nuevaMarcaCtrl.text.trim() : marcaSeleccionada;
+                    if (vehiculo == null) {
+                      await widget.repo.insertarVehiculo(Vehiculo(
+                        clienteId: clienteSeleccionado!,
+                        matricula: mat,
+                        marca: marcaFinal,
+                        modelo: modeloCtrl.text.trim(),
+                        anio: int.tryParse(anioCtrl.text),
+                        kilometraje: int.tryParse(kmCtrl.text),
+                      ));
+                    } else {
+                      await widget.repo.actualizarVehiculo(Vehiculo(
+                        id: vehiculo.id,
+                        clienteId: clienteSeleccionado!,
+                        matricula: mat,
+                        marca: marcaFinal,
+                        modelo: modeloCtrl.text.trim(),
+                        anio: int.tryParse(anioCtrl.text),
+                        kilometraje: int.tryParse(kmCtrl.text),
+                      ));
+                    }
                     if (ctx.mounted) Navigator.pop(ctx);
                     _cargar();
-                    mostrarToast(context, 'Vehículo guardado');
+                    mostrarToast(context, vehiculo == null ? 'Vehículo guardado' : 'Vehículo actualizado');
                   }
                 },
                 child: const Text('Guardar'),
@@ -219,7 +279,13 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
                             title: Text('${v.marca} ${v.modelo}', style: const TextStyle(fontWeight: FontWeight.bold)),
                             subtitle: Text('Matrícula: ${v.matricula}\nCliente: ${_nombreCliente(v.clienteId)}${v.anio != null ? ' | Año: ${v.anio}' : ''}'),
                             isThreeLine: true,
-                            trailing: IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => _eliminar(v)),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _mostrarFormulario(vehiculo: v)),
+                                IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => _eliminar(v)),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -228,7 +294,7 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
           ),
         ],
       ),
-      floatingActionButton: AnimatedFab(onPressed: _mostrarFormulario),
+      floatingActionButton: AnimatedFab(onPressed: () => _mostrarFormulario()),
     );
   }
 }

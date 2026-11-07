@@ -106,7 +106,11 @@ class _OrdenesScreenState extends State<OrdenesScreen> {
                       DropdownButtonFormField<int>(
                         value: vehiculoSeleccionado,
                         decoration: const InputDecoration(labelText: 'Vehículo *', border: OutlineInputBorder()),
-                        items: _vehiculos.map((v) => DropdownMenuItem(value: v.id, child: Text('${v.matricula} - ${v.marca} ${v.modelo}'))).toList(),
+                        // Mostramos matrícula, marca, modelo. No el ID numérico.
+                        items: _vehiculos.map((v) => DropdownMenuItem(
+                          value: v.id,
+                          child: Text('${v.matricula} - ${v.marca} ${v.modelo}'),
+                        )).toList(),
                         onChanged: (v) => setStateDialog(() => vehiculoSeleccionado = v),
                       ),
                       const SizedBox(height: 8),
@@ -258,7 +262,7 @@ class _OrdenCardState extends State<_OrdenCard> {
                 ],
               ),
               const SizedBox(height: 8),
-              Text('Vehículo ID: ${widget.orden.vehiculoId}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text('Vehículo: ${widget.orden.vehiculoId}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
               const SizedBox(height: 4),
               LayoutBuilder(
                 builder: (context, constraints) {

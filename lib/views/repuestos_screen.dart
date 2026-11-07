@@ -35,7 +35,13 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
     ).toList();
   }
 
-  void _eliminar(Repuesto r) {
+  void _eliminar(Repuesto r) async {
+    final enUso = await widget.repo.repuestoEstaEnUso(r.id!);
+    if (enUso) {
+      if (mounted) mostrarToast(context, 'No se puede eliminar: se usó en órdenes', esError: true);
+      return;
+    }
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -58,11 +64,11 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
     );
   }
 
-  void _mostrarFormulario() {
-    final nombreCtrl = TextEditingController();
-    final codigoCtrl = TextEditingController();
-    final precioCtrl = TextEditingController();
-    final stockCtrl = TextEditingController();
+  void _mostrarFormulario({Repuesto? repuesto}) {
+    final nombreCtrl = TextEditingController(text: repuesto?.nombre ?? '');
+    final codigoCtrl = TextEditingController(text: repuesto?.codigo ?? '');
+    final precioCtrl = TextEditingController(text: repuesto?.precio.toString() ?? '');
+    final stockCtrl = TextEditingController(text: repuesto?.stock.toString() ?? '');
     final formKey = GlobalKey<FormState>();
     String? _errorCodigo;
 
@@ -72,7 +78,7 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
         builder: (context, setStateDialog) {
           return AlertDialog(
             insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            title: const Text('Nuevo Repuesto'),
+            title: Text(repuesto == null ? 'Nuevo Repuesto' : 'Editar Repuesto'),
             content: SizedBox(
               width: MediaQuery.of(context).size.width * 0.85,
               child: Form(
@@ -112,7 +118,7 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
                       TextFormField(
                         controller: stockCtrl,
                         maxLength: 6,
-                        decoration: const InputDecoration(labelText: 'Stock inicial *', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
+                        decoration: const InputDecoration(labelText: 'Stock *', border: OutlineInputBorder(), counterStyle: TextStyle(fontSize: 10, color: Colors.grey)),
                         keyboardType: TextInputType.number,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return 'Obligatorio';
@@ -132,20 +138,29 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
                 onPressed: () async {
                   if (formKey.currentState!.validate()) {
                     final codigo = codigoCtrl.text.trim();
-                    if (await widget.repo.existeCodigoRepuesto(codigo)) {
+                    if (await widget.repo.existeCodigoRepuesto(codigo, excluirId: repuesto?.id)) {
                       setStateDialog(() => _errorCodigo = 'Ese código ya está registrado');
                       return;
                     }
-                    setStateDialog(() => _errorCodigo = null);
-                    await widget.repo.insertarRepuesto(Repuesto(
-                      nombre: nombreCtrl.text.trim(),
-                      codigo: codigo,
-                      precio: double.parse(precioCtrl.text.trim()),
-                      stock: int.parse(stockCtrl.text.trim()),
-                    ));
+                    if (repuesto == null) {
+                      await widget.repo.insertarRepuesto(Repuesto(
+                        nombre: nombreCtrl.text.trim(),
+                        codigo: codigo,
+                        precio: double.parse(precioCtrl.text.trim()),
+                        stock: int.parse(stockCtrl.text.trim()),
+                      ));
+                    } else {
+                      await widget.repo.actualizarRepuesto(Repuesto(
+                        id: repuesto.id,
+                        nombre: nombreCtrl.text.trim(),
+                        codigo: codigo,
+                        precio: double.parse(precioCtrl.text.trim()),
+                        stock: int.parse(stockCtrl.text.trim()),
+                      ));
+                    }
                     if (ctx.mounted) Navigator.pop(ctx);
                     _cargar();
-                    mostrarToast(context, 'Repuesto guardado');
+                    mostrarToast(context, repuesto == null ? 'Repuesto guardado' : 'Repuesto actualizado');
                   }
                 },
                 child: const Text('Guardar'),
@@ -198,6 +213,7 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
                                   decoration: BoxDecoration(color: stockBajo ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
                                   child: Text('Stock: ${r.stock}', style: TextStyle(color: stockBajo ? Colors.red : Colors.green, fontWeight: FontWeight.bold)),
                                 ),
+                                IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _mostrarFormulario(repuesto: r)),
                                 IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => _eliminar(r)),
                               ],
                             ),
@@ -209,7 +225,7 @@ class _RepuestosScreenState extends State<RepuestosScreen> {
           ),
         ],
       ),
-      floatingActionButton: AnimatedFab(onPressed: _mostrarFormulario),
+      floatingActionButton: AnimatedFab(onPressed: () => _mostrarFormulario()),
     );
   }
 }

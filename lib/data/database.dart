@@ -4,8 +4,6 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-/// Base de datos principal de la app.
-/// Usa Drift (SQLite) pero SIN el generador de código, escribiendo el SQL a mano.
 class AppDatabase extends GeneratedDatabase {
   AppDatabase(QueryExecutor e) : super(e);
 
@@ -20,31 +18,23 @@ class AppDatabase extends GeneratedDatabase {
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => [];
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2; 
 
   Future<void> crearTablas() async {
-    // Tabla de clientes
     await customStatement('''CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, telefono TEXT NOT NULL, direccion TEXT)''');
-
-    // Tabla de vehículos
     await customStatement('''CREATE TABLE IF NOT EXISTS vehiculos (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente_id INTEGER NOT NULL, matricula TEXT NOT NULL, marca TEXT NOT NULL, modelo TEXT NOT NULL, anio INTEGER, kilometraje INTEGER, FOREIGN KEY (cliente_id) REFERENCES clientes (id))''');
-
-    // Tabla de mecánicos
-    await customStatement('''CREATE TABLE IF NOT EXISTS mecanicos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL)''');
-
-    // Tabla de órdenes (con el nuevo campo 'pagado')
+    await customStatement('''CREATE TABLE IF NOT EXISTS mecanicos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, rol TEXT NOT NULL DEFAULT 'General')''');
     await customStatement('''CREATE TABLE IF NOT EXISTS ordenes (id INTEGER PRIMARY KEY AUTOINCREMENT, vehiculo_id INTEGER NOT NULL, mecanico_id INTEGER, fecha_entrada TEXT NOT NULL, problema TEXT NOT NULL, estado TEXT NOT NULL DEFAULT 'recibida', pagado REAL NOT NULL DEFAULT 0.0, FOREIGN KEY (vehiculo_id) REFERENCES vehiculos (id), FOREIGN KEY (mecanico_id) REFERENCES mecanicos (id))''');
-
-    // Tabla de trabajos
     await customStatement('''CREATE TABLE IF NOT EXISTS trabajos (id INTEGER PRIMARY KEY AUTOINCREMENT, orden_id INTEGER NOT NULL, descripcion TEXT NOT NULL, precio REAL NOT NULL, FOREIGN KEY (orden_id) REFERENCES ordenes (id))''');
-
-    // Tabla de repuestos
     await customStatement('''CREATE TABLE IF NOT EXISTS repuestos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE, precio REAL NOT NULL, stock INTEGER NOT NULL DEFAULT 0)''');
-
-    // Tabla de repuestos usados
     await customStatement('''CREATE TABLE IF NOT EXISTS repuestos_usados (id INTEGER PRIMARY KEY AUTOINCREMENT, orden_id INTEGER NOT NULL, repuesto_id INTEGER NOT NULL, cantidad INTEGER NOT NULL, FOREIGN KEY (orden_id) REFERENCES ordenes (id), FOREIGN KEY (repuesto_id) REFERENCES repuestos (id))''');
-
-    // Tabla de configuración
     await customStatement('''CREATE TABLE IF NOT EXISTS configuracion (clave TEXT PRIMARY KEY, valor TEXT)''');
+  }
+
+  Future<void> migrar() async {
+    try {
+      await customStatement("ALTER TABLE mecanicos ADD COLUMN rol TEXT NOT NULL DEFAULT 'General'");
+    } catch (e) {
+    }
   }
 }

@@ -8,6 +8,7 @@ import 'views/repuestos_screen.dart';
 import 'views/vehiculos_screen.dart';
 import 'views/mecanicos_screen.dart';
 import 'views/reportes_screen.dart';
+import 'widgets/menu_icon.dart'; // <-- NUEVO IMPORT
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +34,7 @@ class _MyAppState extends State<MyApp> {
   Future<Repositorio> _inicializarApp() async {
     final db = AppDatabase(AppDatabase.openConnection());
     await db.crearTablas();
+    await db.migrar(); // <-- Migración para añadir el rol
     final repo = Repositorio(db);
     final tema = await repo.obtenerTema();
     if (tema != null && mounted) setState(() => _themeMode = tema == 'dark' ? ThemeMode.dark : ThemeMode.light);
@@ -124,7 +126,7 @@ class _MainScreenState extends State<MainScreen> {
   final _titulos = ['Órdenes', 'Clientes', 'Vehículos', 'Repuestos', 'Mecánicos', 'Reportes'];
 
   void _navegarA(int index) {
-    Navigator.pop(context); // Cierra el Drawer
+    Navigator.pop(context);
     _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
 
@@ -203,7 +205,7 @@ class _MainScreenState extends State<MainScreen> {
         title: Text(_titulos[_index]),
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
+            icon: const MenuIconAsimetrico(), // <-- ICONO ASIMÉTRICO
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),

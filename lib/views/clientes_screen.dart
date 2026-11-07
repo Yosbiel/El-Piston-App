@@ -41,7 +41,13 @@ class _ClientesScreenState extends State<ClientesScreen> {
     ).toList();
   }
 
-  void _eliminar(Cliente c) {
+  void _eliminar(Cliente c) async {
+    final tieneOrdenes = await widget.repo.clienteTieneOrdenesActivas(c.id!);
+    if (tieneOrdenes) {
+      if (mounted) mostrarToast(context, 'No se puede eliminar: tiene órdenes activas', esError: true);
+      return;
+    }
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -64,10 +70,18 @@ class _ClientesScreenState extends State<ClientesScreen> {
     );
   }
 
-  void _mostrarFormulario() {
-    final nombreCtrl = TextEditingController();
-    final telefonoCtrl = TextEditingController();
-    final direccionCtrl = TextEditingController();
+  void _mostrarFormulario({Cliente? cliente}) async {
+    if (cliente != null) {
+      final tieneOrdenes = await widget.repo.clienteTieneOrdenesActivas(cliente.id!);
+      if (tieneOrdenes) {
+        if (mounted) mostrarToast(context, 'No se puede editar: tiene órdenes activas', esError: true);
+        return;
+      }
+    }
+
+    final nombreCtrl = TextEditingController(text: cliente?.nombre ?? '');
+    final telefonoCtrl = TextEditingController(text: cliente?.telefono ?? '');
+    final direccionCtrl = TextEditingController(text: cliente?.direccion ?? '');
     final formKey = GlobalKey<FormState>();
     String? _errorTelefono;
 
@@ -77,7 +91,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
         builder: (context, setStateDialog) {
           return AlertDialog(
             insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            title: const Text('Nuevo Cliente'),
+            title: Text(cliente == null ? 'Nuevo Cliente' : 'Editar Cliente'),
             content: SizedBox(
               width: MediaQuery.of(context).size.width * 0.85,
               child: Form(
@@ -123,19 +137,27 @@ class _ClientesScreenState extends State<ClientesScreen> {
                 onPressed: () async {
                   if (formKey.currentState!.validate()) {
                     final telefono = telefonoCtrl.text.trim();
-                    if (await widget.repo.existeTelefono(telefono)) {
+                    if (await widget.repo.existeTelefono(telefono, excluirId: cliente?.id)) {
                       setStateDialog(() => _errorTelefono = 'Ese teléfono ya está registrado');
                       return;
                     }
-                    setStateDialog(() => _errorTelefono = null);
-                    await widget.repo.insertarCliente(Cliente(
-                      nombre: nombreCtrl.text.trim(),
-                      telefono: telefono,
-                      direccion: direccionCtrl.text.trim().isEmpty ? null : direccionCtrl.text.trim(),
-                    ));
+                    if (cliente == null) {
+                      await widget.repo.insertarCliente(Cliente(
+                        nombre: nombreCtrl.text.trim(),
+                        telefono: telefono,
+                        direccion: direccionCtrl.text.trim().isEmpty ? null : direccionCtrl.text.trim(),
+                      ));
+                    } else {
+                      await widget.repo.actualizarCliente(Cliente(
+                        id: cliente.id,
+                        nombre: nombreCtrl.text.trim(),
+                        telefono: telefono,
+                        direccion: direccionCtrl.text.trim().isEmpty ? null : direccionCtrl.text.trim(),
+                      ));
+                    }
                     if (ctx.mounted) Navigator.pop(ctx);
                     _cargar();
-                    mostrarToast(context, 'Cliente guardado con éxito');
+                    mostrarToast(context, cliente == null ? 'Cliente guardado' : 'Cliente actualizado');
                   }
                 },
                 child: const Text('Guardar'),
@@ -183,7 +205,13 @@ class _ClientesScreenState extends State<ClientesScreen> {
                             title: Text(c.nombre, style: const TextStyle(fontWeight: FontWeight.w600)),
                             subtitle: Text('${c.telefono}${c.direccion != null ? '\n${c.direccion}' : ''}'),
                             isThreeLine: c.direccion != null,
-                            trailing: IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => _eliminar(c)),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _mostrarFormulario(cliente: c)),
+                                IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => _eliminar(c)),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -192,7 +220,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
           ),
         ],
       ),
-      floatingActionButton: AnimatedFab(onPressed: _mostrarFormulario),
+      floatingActionButton: AnimatedFab(onPressed: () => _mostrarFormulario()),
     );
   }
 }
