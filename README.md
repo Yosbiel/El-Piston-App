@@ -52,11 +52,11 @@
 
 <h2>Funcionalidades Principales</h2>
 <ul>
-  <li><b>Gestión de Clientes:</b> Alta, edición, eliminación y búsqueda por nombre o teléfono (ignorando mayúsculas y acentos).</li>
-  <li><b>Gestión de Vehículos:</b> Alta, edición y eliminación. Asociados a un cliente. Incluye un dropdown con marcas predefinidas y opción de "Otra marca...". Validación del año (entre 1900 y el año actual).</li>
-  <li><b>Gestión de Mecánicos:</b> Alta, edición y eliminación. Incluye un campo de "Rol / Especialidad" con dropdown y opción de "Añadir nueva función...".</li>
-  <li><b>Gestión de Repuestos:</b> Alta, edición y eliminación. Búsqueda por nombre o código. Alerta visual (rojo) cuando el stock es menor a 5 unidades.</li>
-  <li><b>Órdenes de Servicio:</b> Alta con dropdowns de vehículo y mecánico. Cambio de estado desde el detalle (recibida, en diagnóstico, en reparación, lista, entregada, cancelada). Una vez cerrada (entregada o cancelada), no se puede modificar.</li>
+  <li><b>Gestión de Clientes:</b> Crear, editar, eliminar y buscar clientes por nombre o teléfono (ignorando mayúsculas y acentos).</li>
+  <li><b>Gestión de Vehículos:</b> Registrar, editar y eliminar vehículos. Asociados a un cliente. Incluye un dropdown con marcas predefinidas y opción de "Otra marca...". Validación del año (entre 1900 y el año actual).</li>
+  <li><b>Gestión de Mecánicos:</b> Registrar, editar y eliminar mecánicos. Incluye un campo de "Rol / Especialidad" con dropdown y opción de "Añadir nueva función...".</li>
+  <li><b>Gestión de Repuestos:</b> Registrar, editar y eliminar repuestos. Búsqueda por nombre o código. Alerta visual (rojo) cuando el stock es menor a 5 unidades.</li>
+  <li><b>Órdenes de Servicio:</b> Crear órdenes con dropdowns de vehículo y mecánico. Cambio de estado desde el detalle (recibida, en diagnóstico, en reparación, lista, entregada, cancelada). Una vez cerrada (entregada o cancelada), no se puede modificar.</li>
   <li><b>Detalle de Orden:</b> Permite agregar trabajos (mano de obra), usar repuestos (descuenta stock automáticamente) y registrar pagos parciales. Calcula el total, lo pagado y el saldo pendiente en tiempo real.</li>
   <li><b>Reportes:</b> Facturación del día (solo de órdenes entregadas) y carga de trabajo por mecánico.</li>
   <li><b>Integridad referencial:</b> No se puede eliminar ni editar un cliente, vehículo o mecánico si tiene órdenes activas. No se puede eliminar un repuesto si se ha usado en alguna orden.</li>
@@ -65,7 +65,8 @@
 <h2>Decisiones de Diseño</h2>
 <ul>
   <li><b>Interfaz y Colores:</b> Se eligió una paleta basada en un naranja industrial (<code>#E65100</code>) para evocar la temática del taller mecánico, junto con una tipografía moderna (Poppins) para mejorar la legibilidad.</li>
-  <li><b>Experiencia de Usuario (UX):</b> Se implementaron animaciones sutiles de entrada (fade in y slide up) al cargar las listas, una animación de escala en el botón de agregar y un icono de menú asimétrico para un toque moderno. Los diálogos tienen un ancho fijo y son scrollables para evitar roturas al girar el dispositivo o abrir el teclado.</li>
+  <li><b>Experiencia de Usuario (UX):</b> Se implementaron animaciones sutiles de entrada (fade in y slide up) al cargar las listas, una animación de escala en el botón de agregar y un icono de menú asimétrico para un toque moderno.</li>
+  <li><b>Adaptabilidad de los Diálogos:</b> Los formularios se presentan en diálogos con ancho fijo y contenido scrollable, lo que evita que se rompan al abrir el teclado o girar la pantalla. <i>Nota: para una experiencia óptima en pantallas pequeñas, se recomienda el uso del teclado flotante o mantener la orientación vertical.</i></li>
   <li><b>Validaciones:</b> Se implementaron validaciones en tiempo real para evitar duplicados (teléfonos, matrículas, códigos de repuestos), verificar la longitud de los campos, el formato numérico y los rangos de año.</li>
   <li><b>Persistencia del Tema:</b> El modo claro/oscuro se guarda en la base de datos, de modo que la preferencia del usuario se mantiene incluso después de cerrar la aplicación.</li>
   <li><b>Listas Largas:</b> En la pantalla de órdenes, los problemas reportados que exceden las dos líneas se muestran con un botón de "...Leer más" que permite expandir el texto sin romper la estética de la lista.</li>
