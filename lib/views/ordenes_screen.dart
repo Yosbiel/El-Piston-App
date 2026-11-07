@@ -5,7 +5,7 @@ import '../models/vehiculo.dart';
 import '../models/mecanico.dart';
 import '../widgets/animaciones.dart';
 import '../utils/toast.dart';
-import 'detalle_orden_screen.dart';
+import 'detalle_orden_screen.dart'; 
 
 class OrdenesScreen extends StatefulWidget {
   final Repositorio repo;
